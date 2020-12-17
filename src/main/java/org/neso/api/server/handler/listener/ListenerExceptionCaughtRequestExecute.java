@@ -9,6 +9,9 @@ import org.neso.core.request.Session;
 public interface ListenerExceptionCaughtRequestExecute {
 	
 	/**
+	 *
+	 * @param session 접속 정보
+	 * @param request 요청 정보
 	 * @param exception 발생한 예외
 	 * @return 예외 발생 시 내려줄 응답, null리턴시, 기본 메세지 호출
 	 */

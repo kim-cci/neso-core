@@ -124,13 +124,13 @@ public abstract class ServerOptions implements ServerUI {
 		return this;
 	}
 	
-    /**
- 	@Deprecated
-  	public Server requestExecutorType(Class<? extends RequestExecutor> executorClz, Class<?>... parameterTypes) {
-  		this.requestExecutorType = executorClz;
-  		return this;
-  	}
-	*/
+
+// 	-Deprecated
+//  	public Server requestExecutorType(Class<? extends RequestExecutor> executorClz, Class<?>... parameterTypes) {
+//  		this.requestExecutorType = executorClz;
+//  		return this;
+//  	}
+	
 	
 	public abstract <T> ServerOptions channelOption(ChannelOption<T> option, T value);
     

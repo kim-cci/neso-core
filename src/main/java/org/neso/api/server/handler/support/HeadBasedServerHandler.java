@@ -16,11 +16,11 @@ import org.neso.core.request.HeadRequest;
  *  ------------------------------------------------------------------------
  * [0][0][0][6][2][0][1][9][0][1][0][1][S][E][A][R][C][H] [b][b][b][b][b][b]
  * 
- * headLength -> 18
- * bodyLengthFiledOffset -> 0
- * bodyLengthFiledLength -> 4
- * apiIdFieldOffset -> 12
- * apiIdFieldLength -> 6
+ * headLength = 18
+ * bodyLengthFiledOffset = 0
+ * bodyLengthFiledLength = 4
+ * apiIdFieldOffset = 12
+ * apiIdFieldLength = 6
  */
 
 public class HeadBasedServerHandler extends AbstractWirableServerHandler {

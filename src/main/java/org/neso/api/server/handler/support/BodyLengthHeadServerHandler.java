@@ -17,8 +17,8 @@ import org.neso.core.request.HeadRequest;
  * 
  * 
  * headLength = 3
- * apiIdFieldOffsetOnBody -> 0
- * apiIdFieldLengthOnBody -> 12
+ * apiIdFieldOffsetOnBody = 0
+ * apiIdFieldLengthOnBody = 12
  */
 public class BodyLengthHeadServerHandler extends AbstractWirableServerHandler {
 	

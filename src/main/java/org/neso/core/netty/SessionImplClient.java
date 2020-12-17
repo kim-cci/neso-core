@@ -13,7 +13,7 @@ import org.neso.core.server.ServerContext;
  * Session 구현체
  * client 구현체이지만 session기능만 정의
  * 
- * @See ClientAgent 
+ * {@link ClientAgent} 
  */
 public abstract class SessionImplClient implements Client {
 

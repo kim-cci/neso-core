@@ -12,11 +12,16 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractServerHandler extends ServerHandler {
 	
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
-	
+
+
 	protected AbstractServerHandler() {
 		checkConcreteGetApi(this.getClass());
 	}
-
+	
+	/**
+	 * 
+	 * @param c
+	 */
     private void checkConcreteGetApi(Class<? extends AbstractServerHandler> c) {
 
         Class<?> clazz = c;
@@ -50,8 +55,6 @@ public abstract class AbstractServerHandler extends ServerHandler {
         	logger.error("required override 'getBodyLength' in serverHandler ->  {} ", this.getClass().getSimpleName());
         }
     }
-
-
 
 	
 	protected String apiKeyFromHead(byte[] head) {

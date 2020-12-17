@@ -5,17 +5,17 @@ import org.neso.core.server.ServerContext;
 public interface Session {
 
 	/**
-	 * 접속지 정보
+	 * @return 접속지 정보
 	 */
     public String getRemoteAddr();
     
     /**
-     * 접속한 시간
+     * @return 접속한 시간
      */
     public long getConnectionTime();
     
     /**
-     * 접속 서버 context
+     * @return 접속 서버 context
      */
     public ServerContext getServerContext();
 

@@ -27,24 +27,12 @@ public class AsyncCloseReadTimeoutHandler extends ChannelInboundHandlerAdapter {
     private boolean closed;
     
     private ByteLengthBasedReader reader;
-    /**
-     * Creates a new instance.
-     *
-     * @param timeoutSeconds
-     *        read timeout in seconds
-     */
+
     public AsyncCloseReadTimeoutHandler(int timeoutSeconds, ByteLengthBasedReader reader) {
         this(timeoutSeconds, TimeUnit.SECONDS, reader);
     }
 
-    /**
-     * Creates a new instance.
-     *
-     * @param timeout
-     *        read timeout
-     * @param unit
-     *        the {@link TimeUnit} of {@code timeout}
-     */
+
     public AsyncCloseReadTimeoutHandler(long timeout, TimeUnit unit, ByteLengthBasedReader reader) {
         if (unit == null) {
             throw new NullPointerException("unit");
@@ -141,9 +129,7 @@ public class AsyncCloseReadTimeoutHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    /**
-     * Is called when a read timeout was detected.
-     */
+
     protected void readTimedOut(ChannelHandlerContext ctx) throws Exception {
         if (!closed) {
         	reader.onReadException(ReadTimeoutException.INSTANCE);
