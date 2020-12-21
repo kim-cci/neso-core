@@ -59,7 +59,7 @@ public class ClientAgent extends SessionClientImpl {
 		this.writeTimeoutMillis = serverContext.options().getWriteTimeoutMillis();
 		this.connectionOriented = serverContext.options().isConnectionOriented();
 		
-		this.needWriteLock = !serverContext.requestExecutor().isRunIoThread();
+		this.needWriteLock = !serverContext.requestExecutor().isRunOnIoThread();
     	this.reader = new HeadBodyRequestReader(this, serverContext);
     	this.writer = new Bbw();
 	}

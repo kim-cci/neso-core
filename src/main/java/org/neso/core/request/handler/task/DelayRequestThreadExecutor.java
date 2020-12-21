@@ -26,13 +26,13 @@ public class DelayRequestThreadExecutor extends AbstractRequestExecutor {
 
 	
 	@Override
-	public boolean isRunIoThread() {
+	public boolean isRunOnIoThread() {
 		return false;
 	}
 
 	@Override
-	public void init(int maxExecuteSize) {
-		super.init(maxExecuteSize);
+	public void init(int maxRequests, int shutdownWaitSeconds) {
+		super.init(maxRequests, shutdownWaitSeconds);
 		
 		this.tp = new ThreadPoolExecutor(getMaxRequets(),  getMaxRequets(), 
 				0l, TimeUnit.MILLISECONDS, new LinkedBlockingDeque<Runnable>(getMaxRequets() / 2)
@@ -40,7 +40,7 @@ public class DelayRequestThreadExecutor extends AbstractRequestExecutor {
 	}
 	
 	@Override
-	public  boolean registerTask(RequestTask task) {
+	public boolean registerTask(RequestTask task) {
 		try {
 			tp.submit(task);
 			return true;
@@ -52,17 +52,35 @@ public class DelayRequestThreadExecutor extends AbstractRequestExecutor {
 	@Override
 	public void shutdown() {
 		//TODO 검증
-		logger.info("requestTaskThreadExecutor shutdown (current task count={})", tp.getTaskCount());
+		int notCompleted = tp.getActiveCount() + tp.getQueue().size();
+		logger.info("requestTaskExecutor shutdown (queued task({}) + active task({}))", tp.getQueue().size(), tp.getActiveCount());
+		if (notCompleted == 0) {
+			return;
+		}
+		
 		tp.shutdown();
 		try {
-			if (!tp.isShutdown() && !tp.awaitTermination(5, TimeUnit.SECONDS)) {
-
-				if (!tp.isShutdown() && !tp.awaitTermination(5, TimeUnit.SECONDS)) {
-					logger.info("shutdown fail...");
+			if (getShutdownWaitSeconds() == 0) {
+				tp.shutdownNow();
+				logger.info("Attempts to stop all({}) actively executing tasks", notCompleted);
+			} else {	
+			
+				tp.shutdown();
+				boolean shutdownResult = false;
+				if (getShutdownWaitSeconds() == -1) {
+					//무제한 대기
+					shutdownResult = tp.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
+				} else {
+					shutdownResult = tp.awaitTermination(getShutdownWaitSeconds(), TimeUnit.SECONDS);
+				}
+				
+				if (shutdownResult) {
+					logger.info("request executor shutdown .. All requests were processed normally");
+				} else {
+					logger.info("request executor shutdown .. Not all requests have been fully processed");
 				}
 			}
-		} catch (InterruptedException e) {
-			
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

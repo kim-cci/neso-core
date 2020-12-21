@@ -4,10 +4,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class IoThreadExecutor extends AbstractRequestExecutor {
 	
-	private AtomicInteger currentCount = new AtomicInteger(0);
+	private AtomicInteger inProgressRequestTaskCount = new AtomicInteger(0);
 	
 	@Override
-	public boolean isRunIoThread() {
+	public boolean isRunOnIoThread() {
 		return true;
 	}
 	
@@ -15,13 +15,13 @@ public class IoThreadExecutor extends AbstractRequestExecutor {
 	@Override
 	public boolean registerTask(RequestTask task) {
 		
-		if (currentCount.incrementAndGet() > getMaxRequets()) {
-			currentCount.decrementAndGet();
+		if (inProgressRequestTaskCount.incrementAndGet() > getMaxRequets()) {
+			inProgressRequestTaskCount.decrementAndGet();
 			return false;
 		}
 		
 		task.run();
-		currentCount.decrementAndGet();
+		inProgressRequestTaskCount.decrementAndGet();
 		return true;
 	}
 

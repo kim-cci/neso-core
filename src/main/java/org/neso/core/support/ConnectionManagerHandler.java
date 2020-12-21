@@ -38,7 +38,7 @@ public class ConnectionManagerHandler extends ChannelInboundHandlerAdapter imple
 	}
 	
 	@Override
-	public int getCurruntConnectionSize() {
+	public int getCurrentConnectionSize() {
 		return this.connectionQueue.size();
 	}
 	

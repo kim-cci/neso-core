@@ -32,6 +32,7 @@ public abstract class ServerOptions implements ServerUI {
 	
 	private Class<? extends RequestExecutor> requestExecutorType = BasicRequestThreadExecutor.class;
 	
+	private int requestExecutorshutdownWaitSeconds = -1;
 	
 	public Class<? extends RequestExecutor> getRequestExecutorType() {
 		return requestExecutorType;
@@ -69,7 +70,14 @@ public abstract class ServerOptions implements ServerUI {
 		return writeTimeoutMillis;
 	}
 
+	public int getRequestExecutorshutdownWaitSeconds() {
+		return requestExecutorshutdownWaitSeconds;
+	}
 	
+	public ServerOptions requestExecutorshutdownWaitSeconds(int requestExecutorshutdownWaitSeconds) {
+		this.requestExecutorshutdownWaitSeconds = requestExecutorshutdownWaitSeconds;
+		return this;
+	}
 	
 	
 	public ServerOptions connectionOriented(boolean connectionOriented) {

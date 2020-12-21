@@ -65,8 +65,8 @@ public class Server extends ServerOptions {
     	
 
 		int ioThreads = 0; //0은 네티 전략 따름 -> core * 2;
-    	if (context.requestExecutor().isRunIoThread()) {
-			ioThreads = this.context.requestExecutor().getMaxRequets() + 1; //io스레드가 request처리 동시실행숫자보다 작으면 io스레드에서 병목이 발생하므로.. io스레드가 무조건 커야한다.
+    	if (context.requestExecutor().isRunOnIoThread()) {
+			ioThreads = context.options().getMaxRequests() + 1; //io스레드가 request처리 동시실행숫자보다 작으면 io스레드에서 병목이 발생하므로.. io스레드가 무조건 커야한다.
 		}
     	
     	EventLoopGroup workerGroup = new NioEventLoopGroup(ioThreads, new DefaultThreadFactory("ioThread"));//connectionManager.getMaxConnectionSize() + 1
@@ -153,7 +153,7 @@ public class Server extends ServerOptions {
         	//Constructor<? extends RequestTaskExecutor> cons = requestExecutorType.getConstructor(new Class[]{int.class});
     		Constructor<? extends RequestExecutor> cons = getRequestExecutorType().getConstructor();
         	RequestExecutor requestTaskExecutor = cons.newInstance();
-        	requestTaskExecutor.init(getMaxRequests());
+        	requestTaskExecutor.init(getMaxRequests(), getRequestExecutorshutdownWaitSeconds());
         	
         	//TODO requestTaskExecutor 로그 출력
         	
