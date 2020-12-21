@@ -12,16 +12,17 @@ public class ServerContext {
 	
 	final ServerOptions options;
 	
-	private RequestFactory requestFactory;
-	private RequestExecutor requestExecutor;
-	private ConnectionManager connectionManager;
+	final private RequestFactory requestFactory;
+	final private RequestExecutor requestExecutor;
+	final private ConnectionManager connectionManager;
 	
-	
-	
-	public ServerContext(int port, RequestHandler requestHandler, ServerOptions serverOptions) {
+	public ServerContext(int port, RequestHandler requestHandler, ServerOptions serverOptions, RequestFactory requestFactory, RequestExecutor requestExecutor, ConnectionManager connectionManager) {
 		this.port = port;
 		this.requestHandler = requestHandler;
 		this.options = serverOptions;
+		this.requestFactory = requestFactory;
+		this.requestExecutor = requestExecutor;
+		this.connectionManager = connectionManager;
 	}
 	
 	public int port() {
@@ -47,17 +48,5 @@ public class ServerContext {
 	
 	public ConnectionManager connectionManager() {
 		return this.connectionManager;
-	}
-	
-	protected void setRequestFactory(RequestFactory requestFactory) {
-		this.requestFactory = requestFactory;
-	}
-	
-	protected void setRequestExecutor(RequestExecutor requestExecutor) {
-		this.requestExecutor = requestExecutor;
-	}
-	
-	protected void setConnectionManager(ConnectionManager connectionManager) {
-		this.connectionManager = connectionManager;
 	}
 }

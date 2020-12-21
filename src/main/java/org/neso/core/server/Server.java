@@ -29,15 +29,21 @@ public class Server extends ServerOptions {
 	
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
  
-    final private ServerBootstrap sbs;
+    final private ServerBootstrap sbs = new ServerBootstrap();
+
+    final RequestHandler requestHandler;
     
-    final private ServerContext context;
+    final int port;
+    
+    
+    private ServerContext context;	//서버 기동시 초기화
     
     private int soBackLog = -1;
-
+    
+    
     public Server(RequestHandler requestHandler, int port) {
-    	context = new ServerContext(port, requestHandler, this);
-    	sbs = new ServerBootstrap();
+    	this.requestHandler = requestHandler;
+    	this.port = port;
 	}
  
     
@@ -49,6 +55,7 @@ public class Server extends ServerOptions {
     	sbs.option(option, value);
     	return this;
     }
+    
     @Override
     public <T> ServerOptions childChannelOption(ChannelOption<T> childOption, T value) {
     	sbs.childOption(childOption, value);
@@ -141,35 +148,30 @@ public class Server extends ServerOptions {
         }
     }
     
-    public ServerContext getServerContext() {
-    	return this.context;
-    }
-    
+
 
     private void configurationContext() {
     	
+    	RequestExecutor requestTaskExecutor = null;
     	try {
     	    
         	//Constructor<? extends RequestTaskExecutor> cons = requestExecutorType.getConstructor(new Class[]{int.class});
     		Constructor<? extends RequestExecutor> cons = getRequestExecutorType().getConstructor();
-        	RequestExecutor requestTaskExecutor = cons.newInstance();
+        	requestTaskExecutor = cons.newInstance();
         	requestTaskExecutor.init(getMaxRequests(), getRequestExecutorshutdownWaitSeconds());
         	
         	//TODO requestTaskExecutor 로그 출력
-        	
-        	context.setRequestExecutor(requestTaskExecutor);
     	} catch (Exception e) {
     		throw new RuntimeException("configuration server context .. requestExecutor create error", e);
     	}
-    	
-    	context.setRequestFactory(new InMemoryRequestFactory());  //일단 메모리만 제공
-    	
+
     	int maxConnections = getMaxConnections();
 		ConnectionManagerHandler connectionManagerHandler = new ConnectionManagerHandler(maxConnections);
 		if (context.requestHandler() instanceof ConnectionRejectListener) {
 			connectionManagerHandler.setConnectionRejectListener((ConnectionRejectListener) context.requestHandler());
 		}
-		context.setConnectionManager(connectionManagerHandler);
+		
+		this.context = new ServerContext(port, requestHandler, this, new InMemoryRequestFactory(), requestTaskExecutor, connectionManagerHandler);
     }
     
 

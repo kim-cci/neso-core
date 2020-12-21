@@ -15,6 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.neso.core.exception.ClientAbortException;
 import org.neso.core.request.handler.RequestHandler;
 import org.neso.core.server.ServerContext;
+import org.neso.core.server.ServerOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,14 +54,19 @@ public class ClientAgent extends SessionClientImpl {
     
 	public ClientAgent(SocketChannel sc, ServerContext serverContext) {
 		super(sc);
-		this.serverContext = serverContext;
-		this.inoutLogging = serverContext.options().isInoutLogging();
-		this.requestHandler = serverContext.requestHandler();
-		this.writeTimeoutMillis = serverContext.options().getWriteTimeoutMillis();
-		this.connectionOriented = serverContext.options().isConnectionOriented();
 		
+		this.serverContext = serverContext;
+		
+		ServerOptions options = serverContext.options();
+		
+		//writer need..
+		this.inoutLogging = options.isInoutLogging();
+		this.writeTimeoutMillis = options.getWriteTimeoutMillis();
+		this.connectionOriented = options.isConnectionOriented();
+		this.requestHandler = serverContext.requestHandler();
 		this.needWriteLock = !serverContext.requestExecutor().isRunOnIoThread();
-    	this.reader = new HeadBodyRequestReader(this, serverContext);
+
+    	this.reader = new HeadBodyRequestReader(this, this.inoutLogging, this.requestHandler, serverContext.requestFactory(), this.connectionOriented, options.getMaxRequestBodyLength());
     	this.writer = new Bbw();
 	}
 	

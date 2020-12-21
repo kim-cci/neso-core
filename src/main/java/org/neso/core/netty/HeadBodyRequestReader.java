@@ -7,7 +7,6 @@ import org.neso.core.request.Client;
 import org.neso.core.request.factory.RequestFactory;
 import org.neso.core.request.handler.RequestHandler;
 import org.neso.core.request.internal.OperableHeadBodyRequest;
-import org.neso.core.server.ServerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +19,6 @@ public class HeadBodyRequestReader implements ByteLengthBasedReader {
 	final Logger logger = LoggerFactory.getLogger(this.getClass());
 	 
 	final private Client client;
-	
 	
 	private OperableHeadBodyRequest currentRequest;
 	
@@ -39,13 +37,13 @@ public class HeadBodyRequestReader implements ByteLengthBasedReader {
     final private int maxRequestBodyLength;
     
     
-	public HeadBodyRequestReader(Client client, ServerContext serverContext) {
+	public HeadBodyRequestReader(Client client, boolean inoutLogging, RequestHandler requestHandler, RequestFactory requestFactory, boolean connectionOriented, int maxRequestBodyLength) {
 		this.client = client;
-		this.inoutLogging = serverContext.options().isInoutLogging();
-		this.requestHandler = serverContext.requestHandler();
-		this.requestFactory = serverContext.requestFactory();
-		this.connectionOriented = serverContext.options().isConnectionOriented();
-		this.maxRequestBodyLength = serverContext.options().getMaxRequestBodyLength();
+		this.inoutLogging = inoutLogging;
+		this.requestHandler = requestHandler;
+		this.requestFactory = requestFactory;
+		this.connectionOriented = connectionOriented;
+		this.maxRequestBodyLength = maxRequestBodyLength;
 	}
 	
 	@Override
