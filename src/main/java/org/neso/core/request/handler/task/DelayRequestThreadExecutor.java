@@ -31,8 +31,8 @@ public class DelayRequestThreadExecutor extends AbstractRequestExecutor {
 	}
 
 	@Override
-	public void init(int MaxExecuteSize) {
-		super.init(MaxExecuteSize);
+	public void init(int maxExecuteSize) {
+		super.init(maxExecuteSize);
 		
 		this.tp = new ThreadPoolExecutor(getMaxRequets(),  getMaxRequets(), 
 				0l, TimeUnit.MILLISECONDS, new LinkedBlockingDeque<Runnable>(getMaxRequets() / 2)

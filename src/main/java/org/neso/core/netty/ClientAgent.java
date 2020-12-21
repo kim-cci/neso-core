@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neso.core.exception.ClientAbortException;
+import org.neso.core.request.handler.RequestHandler;
 import org.neso.core.server.ServerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,33 +23,54 @@ import org.slf4j.LoggerFactory;
  * request 처리 스레드에 의해서 공유된다.
  * 
  */
-public class ClientAgent extends SessionImplClient {
+public class ClientAgent extends SessionClientImpl {
 
 	final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	final private ReentrantLock lock = new ReentrantLock();
+	final private ReentrantLock writeLock = new ReentrantLock();
 	
-	final private ByteLengthBasedReader headBodyRequestReader;
+	final private boolean needWriteLock;	//락이 필요 없는 경우 오버헤드를 줄이기 위해 
+	
+	final private ByteLengthBasedReader reader;
 	
 	final private Bbw writer;
 
     private boolean writable = true;
     
- 
-	public ClientAgent(SocketChannel sc, ServerContext serverContext) {
-		super(sc, serverContext);
-    	
-    	if (serverContext.options().getWriteTimeoutMillis() < 0) {
-    		throw new RuntimeException("writeTimeoutMillis is bigger than zero");
-    	}
     
-    	this.headBodyRequestReader = new HeadBodyRequestReader(this, getServerContext());
+    final private ServerContext serverContext;
+    
+    //severContext copy value .. serverContext 의존성을 제거할까 고민.. session에서 접근 권한을 주는게 이득인가...
+    final private boolean inoutLogging;
+    
+    final private RequestHandler requestHandler;
+    
+    final private int writeTimeoutMillis;
+    
+    final private boolean connectionOriented;
+    
+   
+    
+	public ClientAgent(SocketChannel sc, ServerContext serverContext) {
+		super(sc);
+		this.serverContext = serverContext;
+		this.inoutLogging = serverContext.options().isInoutLogging();
+		this.requestHandler = serverContext.requestHandler();
+		this.writeTimeoutMillis = serverContext.options().getWriteTimeoutMillis();
+		this.connectionOriented = serverContext.options().isConnectionOriented();
+		
+		this.needWriteLock = !serverContext.requestExecutor().isRunIoThread();
+    	this.reader = new HeadBodyRequestReader(this, serverContext);
     	this.writer = new Bbw();
 	}
 	
+    @Override
+    public ServerContext getServerContext() {
+        return this.serverContext;
+    }
 	
 	public ByteLengthBasedReader getReader() {
-		return this.headBodyRequestReader;
+		return this.reader;
 	}
     
     @Override
@@ -76,20 +98,23 @@ public class ClientAgent extends SessionImplClient {
     
     @Override
     public void disconnect() {
-
-    	if (lock.isHeldByCurrentThread()) {
+    	if (!needWriteLock) {
+    		disconnectProc();
+    		return;
+    	}
+    	if (writeLock.isHeldByCurrentThread()) {
     		disconnectProc();
     		
     	} else {
     		
-    		lock.lock();
+    		writeLock.lock();
     		//logger.debug("disconnect lock get");
     		try {
     			disconnectProc();
     			
 			} finally {
     			//logger.debug("disconnect lock release!!!!!!!!!!");
-    			lock.unlock();
+				writeLock.unlock();
 			}
     	}
     }
@@ -117,7 +142,12 @@ public class ClientAgent extends SessionImplClient {
     
     @Override
     public void releaseWriterLock() {
-    	if (lock.isHeldByCurrentThread()) {
+    	if (!needWriteLock) {
+    		getWriter().close();
+    		return;
+    	}
+    	
+    	if (writeLock.isHeldByCurrentThread()) {
     		//logger.debug("client release ... unlock");
     		getWriter().close();
     	}
@@ -125,10 +155,14 @@ public class ClientAgent extends SessionImplClient {
     
     @Override
     public ByteBasedWriter getWriter() {
-    	if (lock.isHeldByCurrentThread()) {
+    	if (!needWriteLock) {
+    		return writer;
+    	}
+    	
+    	if (writeLock.isHeldByCurrentThread()) {
     		return writer;
     	} else {
-    		lock.lock();
+    		writeLock.lock();
     		//logger.debug("writer lock get");
         	return writer;
     	}
@@ -162,36 +196,36 @@ public class ClientAgent extends SessionImplClient {
 
 				if (isConnected()) {
 					
-					if (getServerContext().options().isInoutLogging()) {
+					if (inoutLogging) {
 						log(buf);	//TODO 리스너안으로 로그를 넣어야 하는데.. 과연 BUF복사 비용까지.. 들이면서 해야하나..
 					}
 					
 					final ChannelFuture cf = lastCf.channel().write(buf);
-					final ScheduledFuture<?> writeTimeoutFu = socketChannel().eventLoop().schedule(new Runnable() {
+					final ScheduledFuture<?> writeTimeoutFuture = socketChannel().eventLoop().schedule(new Runnable() {
 						
 						@Override
 						public void run() {
 							if (!cf.isDone()) {
 								if (writable) {
-									getServerContext().requestHandler().onExceptionWrite(ClientAgent.this, WriteTimeoutException.INSTANCE);
+									requestHandler.onExceptionWrite(ClientAgent.this, WriteTimeoutException.INSTANCE);
 									writable = false;
 								}
 							}
 						}
-					}, getServerContext().options().getWriteTimeoutMillis(), TimeUnit.MILLISECONDS);
+					}, writeTimeoutMillis, TimeUnit.MILLISECONDS);
 
 					lastCf = cf.addListener(new ChannelFutureListener() {
 						
 						@Override
 						public void operationComplete(ChannelFuture future) throws Exception {
-							writeTimeoutFu.cancel(false);
+							writeTimeoutFuture.cancel(false);
 						}
 					});
 					
 	    		} else {
 	    			//logger.debug("접속 종료로 인해...쓰기 작업 중단");
 					if (writable) {
-						getServerContext().requestHandler().onExceptionWrite(ClientAgent.this, new ClientAbortException(ClientAgent.this));
+						requestHandler.onExceptionWrite(ClientAgent.this, new ClientAbortException(ClientAgent.this));
 						writable = false;
 					}
 	    		}
@@ -207,16 +241,16 @@ public class ClientAgent extends SessionImplClient {
 			
 			socketChannel().flush();
 			
-			if (!getServerContext().options().isConnectionOriented()) {
+			if (!connectionOriented) {
 				if (writable) {
 					disconnect();
 					writable = false;
 				}
 			}
 			
-			if (lock.isHeldByCurrentThread()) {
+			if (writeLock.isHeldByCurrentThread()) {
 				//logger.debug("writer lock release");
-				lock.unlock();
+				writeLock.unlock();
 			}
 		}
     }

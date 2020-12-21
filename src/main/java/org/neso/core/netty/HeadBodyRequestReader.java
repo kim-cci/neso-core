@@ -4,6 +4,8 @@ import static io.netty.util.internal.StringUtil.NEWLINE;
 
 
 import org.neso.core.request.Client;
+import org.neso.core.request.factory.RequestFactory;
+import org.neso.core.request.handler.RequestHandler;
 import org.neso.core.request.internal.OperableHeadBodyRequest;
 import org.neso.core.server.ServerContext;
 import org.slf4j.Logger;
@@ -19,28 +21,43 @@ public class HeadBodyRequestReader implements ByteLengthBasedReader {
 	 
 	final private Client client;
 	
-	final private ServerContext serverContext;
 	
 	private OperableHeadBodyRequest currentRequest;
 	
 	private ReaderStatus readStatus = null;
 
 	
+	//ServerContext copy
+	final private boolean inoutLogging;
+	
+	final private RequestHandler requestHandler;
+	
+	final private RequestFactory requestFactory;
+    
+    final private boolean connectionOriented;
+    
+    final private int maxRequestBodyLength;
+    
+    
 	public HeadBodyRequestReader(Client client, ServerContext serverContext) {
 		this.client = client;
-		this.serverContext = serverContext;
+		this.inoutLogging = serverContext.options().isInoutLogging();
+		this.requestHandler = serverContext.requestHandler();
+		this.requestFactory = serverContext.requestFactory();
+		this.connectionOriented = serverContext.options().isConnectionOriented();
+		this.maxRequestBodyLength = serverContext.options().getMaxRequestBodyLength();
 	}
 	
 	@Override
 	public void init() {
-		this.currentRequest = serverContext.requestFactory().newHeadBodyRequest(client);
-		serverContext.requestHandler().onConnect(client);
-		readStatus = serverContext.options().isConnectionOriented()? ReaderStatus.STANBY: ReaderStatus.ING;
+		this.currentRequest = requestFactory.newHeadBodyRequest(client);
+		requestHandler.onConnect(client);
+		readStatus = connectionOriented? ReaderStatus.STANBY: ReaderStatus.ING;
 	}
 
 	@Override
 	public void destroy() {
-		serverContext.requestHandler().onDisconnect(client);
+		requestHandler.onDisconnect(client);
 	}
     
 	@Override
@@ -55,7 +72,7 @@ public class HeadBodyRequestReader implements ByteLengthBasedReader {
     	}
     	
     	if (!currentRequest.isReadedHead()) {
-    		int headLength = serverContext.requestHandler().headLength();
+    		int headLength = requestHandler.headLength();
     		if (headLength < 1) {
     			throw new RuntimeException("Header length cannot be zero or a negative number ");
     		}
@@ -63,10 +80,10 @@ public class HeadBodyRequestReader implements ByteLengthBasedReader {
     		
 		} else { //if (!currentRequest.isReadedBody()) 
 			
-			int bodyLength = serverContext.requestHandler().bodyLength(currentRequest);
+			int bodyLength = requestHandler.bodyLength(currentRequest);
 			
-			if (serverContext.options().getMaxRequestBodyLength() > 0) {
-				if (serverContext.options().getMaxRequestBodyLength() < bodyLength) {
+			if (maxRequestBodyLength > 0) {
+				if (maxRequestBodyLength < bodyLength) {
 					throw new RuntimeException("Too long body length..");
 				}
 			}
@@ -85,7 +102,7 @@ public class HeadBodyRequestReader implements ByteLengthBasedReader {
     	
 		if (!currentRequest.isReadedHead()) {
 			
-			if (serverContext.options().isInoutLogging()) {
+			if (inoutLogging) {
 				log("HEADER RECEIVED", readedBuf);
 			}
 			
@@ -105,7 +122,7 @@ public class HeadBodyRequestReader implements ByteLengthBasedReader {
 			readStatus = ReaderStatus.ING;
 		} else { //if (!currentRequest.isReadedBody()) 
 			
-			if (serverContext.options().isInoutLogging()) {
+			if (inoutLogging) {
 				log("BODY RECEIVED", readedBuf);
 			}
 			
@@ -115,10 +132,10 @@ public class HeadBodyRequestReader implements ByteLengthBasedReader {
 			
 			currentRequest.setBodyBytes(readedBuf);
 			
-			serverContext.requestHandler().onRequest(client, currentRequest);
+			requestHandler.onRequest(client, currentRequest);
     		
-    		if (serverContext.options().isConnectionOriented()) {	//요청을 계속 받을 수 있다면. 새 리퀘스트를 만들어 놓고..
-    			this.currentRequest = serverContext.requestFactory().newHeadBodyRequest(client);
+    		if (connectionOriented) {	//요청을 계속 받을 수 있다면. 새 리퀘스트를 만들어 놓고..
+    			this.currentRequest = requestFactory.newHeadBodyRequest(client);
     			readStatus = ReaderStatus.STANBY;
 			} else {
 				readStatus = ReaderStatus.CLOSE;
@@ -144,7 +161,7 @@ public class HeadBodyRequestReader implements ByteLengthBasedReader {
 	public void onReadException(Throwable th) {
 
     	try {
-    		serverContext.requestHandler().onExceptionRead(client, th);
+    		requestHandler.onExceptionRead(client, th);
     	}catch (Exception e) {
 			logger.error("occurred exception.. requestHandler's onExceptionRead", e);
 		}

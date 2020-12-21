@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.neso.core.request.Client;
-import org.neso.core.server.ServerContext;
 
 /**
  * Session 구현체
@@ -15,18 +14,17 @@ import org.neso.core.server.ServerContext;
  * 
  * {@link ClientAgent} 
  */
-public abstract class SessionImplClient implements Client {
+public abstract class SessionClientImpl implements Client {
 
 	final private long connectionTime;
-	final private ServerContext serverContext;
 	   
 	final private SocketChannel sc;
 		
 	private Map<String, Object> sessionAttrMap = new LinkedHashMap<String, Object>();
-	  
-	public SessionImplClient(SocketChannel sc, ServerContext serverContext) {
+	
+	
+    public SessionClientImpl(SocketChannel sc) {
 		this.connectionTime = System.currentTimeMillis();
-    	this.serverContext = serverContext;
     	this.sc = sc;
 	}
     
@@ -35,11 +33,6 @@ public abstract class SessionImplClient implements Client {
     	return this.connectionTime;
     }
     
-	@Override
-	public ServerContext getServerContext() {
-		return this.serverContext;
-	}
-	
 	@Override
 	public String getRemoteAddr() {
     	if (sc.remoteAddress() instanceof InetSocketAddress) {

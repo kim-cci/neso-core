@@ -10,10 +10,10 @@ public abstract class AbstractRequestExecutor implements RequestExecutor {
 	}
 	
 	@Override
-	public void init(int MaxExecuteSize) {
-		if (MaxExecuteSize < 1) {
+	public void init(int maxExecuteSize) {
+		if (maxExecuteSize < 1) {
 			throw new RuntimeException("max count more than zero");
 		}
-		this.maxRequets = MaxExecuteSize;
+		this.maxRequets = maxExecuteSize;
 	}
 }

@@ -29,9 +29,9 @@ public class Server extends ServerOptions {
 	
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
  
-    private ServerBootstrap sbs;
+    final private ServerBootstrap sbs;
     
-    private ServerContext context;
+    final private ServerContext context;
     
     private int soBackLog = -1;
 
