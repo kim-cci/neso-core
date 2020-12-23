@@ -5,7 +5,7 @@ import io.netty.buffer.ByteBuf;
 /**
  * 바이트 단위로 쓰는 writer 
  * 
- *
+ * {@link Client }
  */
 public interface ByteBasedWriter {
 

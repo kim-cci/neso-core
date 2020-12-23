@@ -178,7 +178,7 @@ public class Server extends ServerOptions {
     private void initializeHandlerByAccept(SocketChannel sc) {
     	
 
-    	ClientAgent clientAgent = new ClientAgent(sc, context);
+    	ClientAgent client = new ClientAgent(sc, context);
     	
 		ChannelPipeline cp = sc.pipeline();
 		
@@ -188,7 +188,7 @@ public class Server extends ServerOptions {
 		
 		cp.addLast((ConnectionManagerHandler) context.connectionManager());
 		
-		ByteLengthBasedInboundHandler readHandler = new ByteLengthBasedInboundHandler(clientAgent.getReader());
+		ByteLengthBasedInboundHandler readHandler = new ByteLengthBasedInboundHandler(client.getReader());
 		
 		cp.addLast(ByteLengthBasedInboundHandler.class.getSimpleName(), readHandler); //4. READ 처리
     }

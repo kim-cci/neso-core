@@ -25,8 +25,8 @@ public interface Client extends Session {
 	 * {@link ByteBasedWriter}
 	 * 
 	 * 하나의 스레드(io스레드와 request처리 스레드들 중)의 쓰기 작업이 완료될때까지 점유 획득
-	 * writer.close() 점유 반환
-	 * 혹은 releaseWriterLock 점유 반환
+	 * 
+	 * writer.close() 혹은 releaseWriterLock 점유 반환
 	 * @return writer
 	 */
 	public ByteBasedWriter getWriter();

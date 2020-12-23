@@ -1,6 +1,7 @@
 package org.neso.core.netty;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.socket.SocketChannel;
@@ -11,9 +12,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neso.core.exception.ClientAbortException;
+import org.neso.core.request.factory.RequestFactory;
 import org.neso.core.request.handler.RequestHandler;
+import org.neso.core.request.internal.OperableHeadBodyRequest;
 import org.neso.core.server.ServerContext;
-import org.neso.core.server.ServerOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,34 +28,33 @@ public class ClientAgent extends SessionClientImpl {
 
 	final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	final private ByteLengthBasedReader reader;
+	final private Bbr reader;
 	
 	final private Bbw writer;
 	
-	final private ReentrantLock writeLock = new ReentrantLock();
-	
-	final private boolean isActiveWriteLock;	//락이 필요 없는 경우 오버헤드를 줄이기 위해 
+	final private ReentrantLock writeLock;
 
     private boolean writable = true;	//락 획득 이후에 참조 됨 - 메모리 동기화 필요없음
     
     
     final private ServerContext serverContext;
     
+    final private boolean inoutLogging;
+    final private boolean connectionOriented;
+    final private RequestHandler requestHandler;
+    
     
 	public ClientAgent(SocketChannel socketChannel, ServerContext context) {
 		super(socketChannel);
-		
-		
 		this.serverContext = context;
 		
-		ServerOptions options = context.options();
+		this.inoutLogging = context.options().isInoutLogging();
+		this.connectionOriented = context.options().isConnectionOriented();
+		this.requestHandler = serverContext.requestHandler();
+		this.writeLock = context.requestExecutor().isRunOnIoThread()? null : new ReentrantLock();		//락이 필요 없는 경우 오버헤드를 줄이기 위해 
 
-		this.isActiveWriteLock = !context.requestExecutor().isRunOnIoThread();
-
-    	this.reader = new ByteLengthBasedHeadBodyReader(this, serverContext.requestHandler(), serverContext.requestFactory(), 
-    			options.isInoutLogging(), options.isConnectionOriented(), options.getMaxRequestBodyLength(), options.getReadTimeoutMillis());
-    	
-    	this.writer = new Bbw(serverContext.requestHandler(), options.isInoutLogging(), options.getWriteTimeoutMillis(), options.isConnectionOriented());
+    	this.reader = new Bbr(serverContext.requestFactory() , serverContext.options().getMaxRequestBodyLength(), serverContext.options().getReadTimeoutMillis());
+    	this.writer = new Bbw(serverContext.options().getWriteTimeoutMillis());
 	}
 	
     @Override
@@ -72,7 +73,7 @@ public class ClientAgent extends SessionClientImpl {
 	
     @Override
     public void disconnect() {
-    	if (!isActiveWriteLock) {
+    	if (writeLock == null) {
     		disconnectProc();
     		return;
     	}
@@ -113,7 +114,7 @@ public class ClientAgent extends SessionClientImpl {
     
     @Override
     public void releaseWriterLock() {
-    	if (!isActiveWriteLock) {
+    	if (writeLock == null) {
     		getWriter().close();
     		return;
     	}
@@ -126,7 +127,7 @@ public class ClientAgent extends SessionClientImpl {
     
     @Override
     public ByteBasedWriter getWriter() {
-    	if (!isActiveWriteLock) {
+    	if (writeLock == null) {
     		return writer;
     	}
     	
@@ -139,25 +140,153 @@ public class ClientAgent extends SessionClientImpl {
     }
     
     
+    public class Bbr implements ByteLengthBasedReader {
+    	
+    	final Logger logger = LoggerFactory.getLogger(this.getClass());
+ 
+    	
+    	private OperableHeadBodyRequest currentRequest;
+    	
+    	private ReaderStatus readStatus = null;
+
+    	
+    	final private RequestFactory requestFactory;
+        
+        final private int maxRequestBodyLength;
+        
+    	final private int readTimeoutMillis;
+        
+    	public Bbr(RequestFactory requestFactory, int maxRequestBodyLength, int readTimeoutMillis) {
+    	
+    		this.requestFactory = requestFactory;
+    		this.maxRequestBodyLength = maxRequestBodyLength;
+    		this.readTimeoutMillis = readTimeoutMillis;
+    	}
+    	
+    	@Override
+    	public int getReadTimeoutMillis() {
+    		return this.readTimeoutMillis;
+    	}
+    	
+    	@Override
+    	public void init() {
+    		this.currentRequest = requestFactory.newHeadBodyRequest(ClientAgent.this);
+    		requestHandler.onConnect(ClientAgent.this);
+    		readStatus = connectionOriented? ReaderStatus.STANBY: ReaderStatus.ING;
+    	}
+
+    	@Override
+    	public void destroy() {
+    		requestHandler.onDisconnect(ClientAgent.this);
+    	}
+        
+    	@Override
+    	public ReaderStatus getStatus() {
+    		return readStatus;
+    	}
+    	
+        @Override
+        public int getToReadBytes() {
+        	if (ReaderStatus.CLOSE == readStatus) {
+        		return 0; //throw new RuntimeException("reader is closed...");
+        	}
+        	
+        	if (!currentRequest.isReadedHead()) {
+        		int headLength = requestHandler.headLength();
+        		if (headLength < 1) {
+        			throw new RuntimeException("Header length cannot be zero or a negative number ");
+        		}
+        		return headLength;
+        		
+    		} else { //if (!currentRequest.isReadedBody()) 
+    			
+    			int bodyLength = requestHandler.bodyLength(currentRequest);
+    			
+    			if (maxRequestBodyLength > 0) {
+    				if (maxRequestBodyLength < bodyLength) {
+    					throw new RuntimeException("Too long body length..");
+    				}
+    			}
+    					
+    			return bodyLength;
+    		}
+        }
+
+        @Override
+        public void onRead(ByteBuf readedBuf) throws Exception {
+        	
+        	if (ReaderStatus.CLOSE == readStatus) {
+        		throw new RuntimeException("reader is closed...");
+        	}
+        	
+        	
+    		if (!currentRequest.isReadedHead()) {
+    			
+    			if (inoutLogging) {
+    				logger.info(BufUtils.bufToString("RECEIVED REQUEST HEAD", readedBuf));
+    			}
+    			
+    			if (getToReadBytes() != readedBuf.capacity()) {
+    				throw new RuntimeException("it's different expected bytes");
+    			}
+    			
+    			currentRequest.setHeadBytes(readedBuf);
+    			
+    			if (getToReadBytes() == 0) {
+                    /**
+                     * 바디가 0인 경우, 더 읽어야 할 필요가 없다면.. request 
+                     **/
+    				onRead(Unpooled.directBuffer(0));
+    			}
+    			
+    			readStatus = ReaderStatus.ING;
+    		} else { //if (!currentRequest.isReadedBody()) 
+    			
+    			if (inoutLogging) {
+    				logger.info(BufUtils.bufToString("RECEIVED REQUEST BODY", readedBuf));
+    			}
+    			
+    			if (getToReadBytes() != readedBuf.capacity()) {
+    				throw new RuntimeException("it's different expected bytes");
+    			}
+    			
+    			currentRequest.setBodyBytes(readedBuf);
+    			
+    			requestHandler.onRequest(ClientAgent.this, currentRequest);
+        		
+        		if (connectionOriented) {	//요청을 계속 받을 수 있다면. 새 리퀘스트를 만들어 놓고..
+        			this.currentRequest = requestFactory.newHeadBodyRequest(ClientAgent.this);
+        			readStatus = ReaderStatus.STANBY;
+    			} else {
+    				readStatus = ReaderStatus.CLOSE;
+    			}
+    		}
+        }
+        
+        
+    	@Override
+    	public void onReadException(Throwable th) {
+
+        	try {
+        		requestHandler.onExceptionRead(ClientAgent.this, th);
+        	}catch (Exception e) {
+    			logger.error("occurred exception.. requestHandler's onExceptionRead", e);
+    		}
+    	}
+    }
     
     
     public class Bbw implements ByteBasedWriter {
     	
     	private ChannelFuture lastCf = socketChannel().newSucceededFuture();
     	
-        final private boolean inoutLogging;
-        
-        final private RequestHandler requestHandler;
+       
         
         final private int writeTimeoutMillis;
         
-        final private boolean connectionOriented;
         
-        public Bbw(RequestHandler requestHandler, boolean inoutLogging, int writeTimeoutMillis, boolean connectionOriented) {
-        	this.requestHandler = requestHandler;
-			this.inoutLogging = inoutLogging;
+        public Bbw(int writeTimeoutMillis) {
 			this.writeTimeoutMillis = writeTimeoutMillis;
-			this.connectionOriented = connectionOriented;
 		}
         
     	public ChannelFuture getCh() {
@@ -235,7 +364,7 @@ public class ClientAgent extends SessionClientImpl {
 				}
 			}
 			
-			if (writeLock.isHeldByCurrentThread()) {
+			if (writeLock != null && writeLock.isHeldByCurrentThread()) {
 				//logger.debug("writer lock release");
 				writeLock.unlock();
 			}

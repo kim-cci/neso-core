@@ -8,24 +8,22 @@ import io.netty.handler.logging.LogLevel;
 
 public abstract class ServerOptions implements ServerUI {
 	
-	//접속 유지 여부
-	private boolean connectionOriented = false;
 	
-	//최대 동시 요청 수
-	private int maxRequests = 100;
+	/**
+	 * 서버 옵션과 기본값 정의
+	 */
+	private int maxConnections = -1;	//최대 동시 접속 수
 	
-	//read timeout
-	private int readTimeoutMillis = 5000;
+	private int maxRequests = 100;	//최대 동시 요청 수
+	
+	private boolean connectionOriented = false;	//접속 유지 여부
+	
+	private int readTimeoutMillis = 5000;	//read timeout
 	
 	private int writeTimeoutMillis = 2000;
 	
-	//최대 동시 접속 수
-	private int maxConnections = -1;
+	private int maxRequestBodyLength = -1;	//본문 최대 길이
    
-	//본문 최대 길이
-	private int maxRequestBodyLength = -1;
-	
-	
 	private boolean inoutLogging = false;
 	
 	private LogLevel pipeLineLogLevel  = null;
@@ -33,6 +31,11 @@ public abstract class ServerOptions implements ServerUI {
 	private Class<? extends RequestExecutor> requestExecutorType = BasicRequestThreadExecutor.class;
 	
 	private int requestExecutorshutdownWaitSeconds = -1;
+	
+	
+	
+	
+	
 	
 	public Class<? extends RequestExecutor> getRequestExecutorType() {
 		return requestExecutorType;
