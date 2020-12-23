@@ -28,21 +28,20 @@ public class ClientAgent extends SessionClientImpl {
 
 	final private ByteLengthBasedReader reader;
 	
-
+	final private Bbw writer;
+	
 	final private ReentrantLock writeLock = new ReentrantLock();
 	
 	final private boolean isActiveWriteLock;	//락이 필요 없는 경우 오버헤드를 줄이기 위해 
-	
-	final private Bbw writer;
 
-    private boolean writable = true;
+    private boolean writable = true;	//락 획득 이후에 참조 됨 - 메모리 동기화 필요없음
     
     
     final private ServerContext serverContext;
     
     
-	public ClientAgent(SocketChannel sc, ServerContext context) {
-		super(sc);
+	public ClientAgent(SocketChannel socketChannel, ServerContext context) {
+		super(socketChannel);
 		
 		
 		this.serverContext = context;
@@ -244,8 +243,4 @@ public class ClientAgent extends SessionClientImpl {
     }
 
 
-	@Override
-	public String toString() {
-		return socketChannel().toString();
-	}
 }
