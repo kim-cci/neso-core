@@ -1,7 +1,5 @@
 package org.neso.core.netty;
 
-import static io.netty.util.internal.StringUtil.NEWLINE;
-
 
 import org.neso.core.request.Client;
 import org.neso.core.request.factory.RequestFactory;
@@ -11,10 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 
-public class HeadBodyRequestReader implements ByteLengthBasedReader {
+public class ByteLengthBasedHeadBodyReader implements ByteLengthBasedReader {
 	
 	final Logger logger = LoggerFactory.getLogger(this.getClass());
 	 
@@ -36,14 +33,21 @@ public class HeadBodyRequestReader implements ByteLengthBasedReader {
     
     final private int maxRequestBodyLength;
     
+	final private int readTimeoutMillis;
     
-	public HeadBodyRequestReader(Client client, boolean inoutLogging, RequestHandler requestHandler, RequestFactory requestFactory, boolean connectionOriented, int maxRequestBodyLength) {
+	public ByteLengthBasedHeadBodyReader(Client client, RequestHandler requestHandler, RequestFactory requestFactory, boolean inoutLogging, boolean connectionOriented, int maxRequestBodyLength, int readTimeoutMillis) {
 		this.client = client;
 		this.inoutLogging = inoutLogging;
 		this.requestHandler = requestHandler;
 		this.requestFactory = requestFactory;
 		this.connectionOriented = connectionOriented;
 		this.maxRequestBodyLength = maxRequestBodyLength;
+		this.readTimeoutMillis = readTimeoutMillis;
+	}
+	
+	@Override
+	public int getReadTimeoutMillis() {
+		return this.readTimeoutMillis;
 	}
 	
 	@Override
@@ -101,7 +105,7 @@ public class HeadBodyRequestReader implements ByteLengthBasedReader {
 		if (!currentRequest.isReadedHead()) {
 			
 			if (inoutLogging) {
-				log("HEADER RECEIVED", readedBuf);
+				logger.info(BufUtils.bufToString("RECEIVED REQUEST HEAD", readedBuf));
 			}
 			
 			if (getToReadBytes() != readedBuf.capacity()) {
@@ -121,7 +125,7 @@ public class HeadBodyRequestReader implements ByteLengthBasedReader {
 		} else { //if (!currentRequest.isReadedBody()) 
 			
 			if (inoutLogging) {
-				log("BODY RECEIVED", readedBuf);
+				logger.info(BufUtils.bufToString("RECEIVED REQUEST BODY", readedBuf));
 			}
 			
 			if (getToReadBytes() != readedBuf.capacity()) {
@@ -141,19 +145,6 @@ public class HeadBodyRequestReader implements ByteLengthBasedReader {
 		}
     }
     
-    private void log(String eventName, ByteBuf readedBuf) {
-		int length = readedBuf.readableBytes();
-		int offset = readedBuf.readerIndex();
-        int rows = length / 16 + (length % 15 == 0? 0 : 1) + 4;
-        StringBuilder dump = new StringBuilder(eventName.length() + 2 + 10 + 1 + 2 + rows * 80);
-
-        dump.append(eventName).append(": ").append(length).append('B').append(NEWLINE);
-    	ByteBufUtil.appendPrettyHexDump(dump, readedBuf, offset, length);
-    	
-    	readedBuf.resetReaderIndex();
-    	
-    	logger.info(dump.toString());
-    }
     
 	@Override
 	public void onReadException(Throwable th) {

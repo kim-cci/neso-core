@@ -20,6 +20,8 @@ public interface ByteLengthBasedReader {
 		CLOSE //읽기가 끝난 상태 (읽기 불가)
 	}
 	
+	public int getReadTimeoutMillis();
+	
 	public ReaderStatus getStatus();
 
 	/**

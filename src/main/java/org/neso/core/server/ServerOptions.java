@@ -15,7 +15,7 @@ public abstract class ServerOptions implements ServerUI {
 	private int maxRequests = 100;
 	
 	//read timeout
-	private int readTimeoutMillisOnRead = 5000;
+	private int readTimeoutMillis = 5000;
 	
 	private int writeTimeoutMillis = 2000;
 	
@@ -46,8 +46,8 @@ public abstract class ServerOptions implements ServerUI {
 		return maxRequests;
 	}
 	
-	public int getReadTimeoutMillisOnRead() {
-		return readTimeoutMillisOnRead;
+	public int getReadTimeoutMillis() {
+		return readTimeoutMillis;
 	}
 	
 	public int getMaxConnections() {
@@ -95,8 +95,8 @@ public abstract class ServerOptions implements ServerUI {
 		return this;
 	}
 	
-	public ServerOptions readTimeoutMillisOnRead(int readTimeoutMillisOnRead) {
-		this.readTimeoutMillisOnRead = readTimeoutMillisOnRead;
+	public ServerOptions readTimeoutMillisOnRead(int readTimeoutMillis) {
+		this.readTimeoutMillis = readTimeoutMillis;
 		return this;
 	}
 

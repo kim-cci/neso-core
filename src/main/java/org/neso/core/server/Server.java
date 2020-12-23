@@ -188,7 +188,7 @@ public class Server extends ServerOptions {
 		
 		cp.addLast((ConnectionManagerHandler) context.connectionManager());
 		
-		ByteLengthBasedInboundHandler readHandler = new ByteLengthBasedInboundHandler(clientAgent.getReader(), getReadTimeoutMillisOnRead());
+		ByteLengthBasedInboundHandler readHandler = new ByteLengthBasedInboundHandler(clientAgent.getReader());
 		
 		cp.addLast(ByteLengthBasedInboundHandler.class.getSimpleName(), readHandler); //4. READ 처리
     }

@@ -1,8 +1,6 @@
 package org.neso.core.netty;
 
-import static io.netty.util.internal.StringUtil.NEWLINE;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.socket.SocketChannel;
@@ -28,11 +26,12 @@ public class ClientAgent extends SessionClientImpl {
 
 	final Logger logger = LoggerFactory.getLogger(this.getClass());
 
+	final private ByteLengthBasedReader reader;
+	
+
 	final private ReentrantLock writeLock = new ReentrantLock();
 	
-	final private boolean needWriteLock;	//락이 필요 없는 경우 오버헤드를 줄이기 위해 
-	
-	final private ByteLengthBasedReader reader;
+	final private boolean isActiveWriteLock;	//락이 필요 없는 경우 오버헤드를 줄이기 위해 
 	
 	final private Bbw writer;
 
@@ -41,33 +40,21 @@ public class ClientAgent extends SessionClientImpl {
     
     final private ServerContext serverContext;
     
-    //severContext copy value .. serverContext 의존성을 제거할까 고민.. session에서 접근 권한을 주는게 이득인가...
-    final private boolean inoutLogging;
     
-    final private RequestHandler requestHandler;
-    
-    final private int writeTimeoutMillis;
-    
-    final private boolean connectionOriented;
-    
-   
-    
-	public ClientAgent(SocketChannel sc, ServerContext serverContext) {
+	public ClientAgent(SocketChannel sc, ServerContext context) {
 		super(sc);
 		
-		this.serverContext = serverContext;
 		
-		ServerOptions options = serverContext.options();
+		this.serverContext = context;
 		
-		//writer need..
-		this.inoutLogging = options.isInoutLogging();
-		this.writeTimeoutMillis = options.getWriteTimeoutMillis();
-		this.connectionOriented = options.isConnectionOriented();
-		this.requestHandler = serverContext.requestHandler();
-		this.needWriteLock = !serverContext.requestExecutor().isRunOnIoThread();
+		ServerOptions options = context.options();
 
-    	this.reader = new HeadBodyRequestReader(this, this.inoutLogging, this.requestHandler, serverContext.requestFactory(), this.connectionOriented, options.getMaxRequestBodyLength());
-    	this.writer = new Bbw();
+		this.isActiveWriteLock = !context.requestExecutor().isRunOnIoThread();
+
+    	this.reader = new ByteLengthBasedHeadBodyReader(this, serverContext.requestHandler(), serverContext.requestFactory(), 
+    			options.isInoutLogging(), options.isConnectionOriented(), options.getMaxRequestBodyLength(), options.getReadTimeoutMillis());
+    	
+    	this.writer = new Bbw(serverContext.requestHandler(), options.isInoutLogging(), options.getWriteTimeoutMillis(), options.isConnectionOriented());
 	}
 	
     @Override
@@ -84,42 +71,23 @@ public class ClientAgent extends SessionClientImpl {
     	return socketChannel().isOpen();
     }
 	
-
-    private void log(ByteBuf readedBuf) {
-    	String eventName = "RESPONSE WRITE";
-		int length = readedBuf.readableBytes();
-		int offset = readedBuf.readerIndex();
-        int rows = length / 16 + (length % 15 == 0? 0 : 1) + 4;
-        StringBuilder dump = new StringBuilder(eventName.length() + 2 + 10 + 1 + 2 + rows * 80);
-
-        dump.append(eventName).append(": ").append(length).append('B').append(NEWLINE);
-    	ByteBufUtil.appendPrettyHexDump(dump, readedBuf, offset, length);
-
-    	readedBuf.resetReaderIndex();
-    	
-    	logger.info(dump.toString());
-    }
-    
-
-    
     @Override
     public void disconnect() {
-    	if (!needWriteLock) {
+    	if (!isActiveWriteLock) {
     		disconnectProc();
     		return;
     	}
+    	
     	if (writeLock.isHeldByCurrentThread()) {
     		disconnectProc();
     		
     	} else {
     		
     		writeLock.lock();
-    		//logger.debug("disconnect lock get");
     		try {
     			disconnectProc();
     			
 			} finally {
-    			//logger.debug("disconnect lock release!!!!!!!!!!");
 				writeLock.unlock();
 			}
     	}
@@ -139,8 +107,6 @@ public class ClientAgent extends SessionClientImpl {
 							//logger.debug("disconnected!!");
 						}
 					});
-				} else {
-					//logger.debug("이미 접속 종료로 인해 무시!!");
 				}
 			}
 		});
@@ -148,7 +114,7 @@ public class ClientAgent extends SessionClientImpl {
     
     @Override
     public void releaseWriterLock() {
-    	if (!needWriteLock) {
+    	if (!isActiveWriteLock) {
     		getWriter().close();
     		return;
     	}
@@ -161,7 +127,7 @@ public class ClientAgent extends SessionClientImpl {
     
     @Override
     public ByteBasedWriter getWriter() {
-    	if (!needWriteLock) {
+    	if (!isActiveWriteLock) {
     		return writer;
     	}
     	
@@ -169,16 +135,32 @@ public class ClientAgent extends SessionClientImpl {
     		return writer;
     	} else {
     		writeLock.lock();
-    		//logger.debug("writer lock get");
         	return writer;
     	}
     }
+    
+    
     
     
     public class Bbw implements ByteBasedWriter {
     	
     	private ChannelFuture lastCf = socketChannel().newSucceededFuture();
     	
+        final private boolean inoutLogging;
+        
+        final private RequestHandler requestHandler;
+        
+        final private int writeTimeoutMillis;
+        
+        final private boolean connectionOriented;
+        
+        public Bbw(RequestHandler requestHandler, boolean inoutLogging, int writeTimeoutMillis, boolean connectionOriented) {
+        	this.requestHandler = requestHandler;
+			this.inoutLogging = inoutLogging;
+			this.writeTimeoutMillis = writeTimeoutMillis;
+			this.connectionOriented = connectionOriented;
+		}
+        
     	public ChannelFuture getCh() {
     		return lastCf;
     	}
@@ -203,7 +185,7 @@ public class ClientAgent extends SessionClientImpl {
 				if (isConnected()) {
 					
 					if (inoutLogging) {
-						log(buf);	//TODO 리스너안으로 로그를 넣어야 하는데.. 과연 BUF복사 비용까지.. 들이면서 해야하나..
+						logger.info(BufUtils.bufToString("WRITE RESPONSE ", buf));	//TODO 리스너안으로 로그를 넣어야 하는데.. 과연 BUF복사 비용까지.. 들이면서 해야하나..
 					}
 					
 					final ChannelFuture cf = lastCf.channel().write(buf);
