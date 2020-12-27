@@ -22,6 +22,10 @@ public class IoThreadExecutor extends AbstractRequestExecutor {
 	@Override
 	public boolean registerTask(RequestTask task) {
 		
+		if (this.shutdownIng) {
+			return false;
+		}
+
 		if (inProgressRequestTaskCount.incrementAndGet() > getMaxRequets()) {
 			inProgressRequestTaskCount.decrementAndGet();
 			return false;
@@ -32,9 +36,6 @@ public class IoThreadExecutor extends AbstractRequestExecutor {
 			
 			task.run();
 		} else {
-			if (this.shutdownIng) {
-				return false;
-			}
 
 			Thread th = Thread.currentThread();
 			ingThreadMap.put(th.getId(), th);
