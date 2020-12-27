@@ -3,9 +3,7 @@ package org.neso.core.netty;
 import io.netty.buffer.ByteBuf;
 
 /**
- * 바이트 단위로 쓰는 writer 
- * 
- * {@link Client }
+ * 바이트 단위로 쓰는 writer
  */
 public interface ByteBasedWriter {
 
