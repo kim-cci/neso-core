@@ -15,6 +15,8 @@ public class RequestTask implements Runnable {
 	final private OperableHeadBodyRequest request;
 	final private Client requestClient;
 	
+	//private boolean interrupted = false;
+	
 	public RequestTask(Client client, OperableHeadBodyRequest request) {
 		this.request = request; 
 		this.requestClient = client;
@@ -43,8 +45,9 @@ public class RequestTask implements Runnable {
 				logger.debug("request task stopped by disconnect, {}", requestClient.toString());
 			}
 			
-		
-			
+		} catch (InterruptedException ignore) {
+			//to-do 만약 IO Thread requestExcutor 일 경우 고민해보자.. 
+			//interrupted = true;
 		} catch (Exception e) {
 			
 			try {

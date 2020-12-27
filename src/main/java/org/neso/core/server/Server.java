@@ -35,7 +35,7 @@ public class Server extends ServerOptions {
     
     final int port;
     
-    
+   
     private ServerContext context;	//서버 기동시 초기화
     
     private int soBackLog = -1;
@@ -78,6 +78,7 @@ public class Server extends ServerOptions {
     	
     	EventLoopGroup workerGroup = new NioEventLoopGroup(ioThreads, new DefaultThreadFactory("ioThread"));//connectionManager.getMaxConnectionSize() + 1
     	
+    	ChannelFuture cf = null;
         try {
         	
         	if (soBackLog == -1) {
@@ -101,7 +102,7 @@ public class Server extends ServerOptions {
              });
             
             
-            final ChannelFuture cf = sbs.bind(context.port()).sync().addListener(new GenericFutureListener<ChannelFuture>() {
+            cf = sbs.bind(context.port()).sync().addListener(new GenericFutureListener<ChannelFuture>() {
                 public void operationComplete(ChannelFuture future) throws Exception {
 
                     if (future.isSuccess()) {
@@ -114,19 +115,25 @@ public class Server extends ServerOptions {
                 }
             });
             
+            final ChannelFuture cpCf = cf;
             Runtime.getRuntime().addShutdownHook(new Thread() {
     			@Override
     			public void run() {
-    				cf.channel().close();
+    				context.requestExecutor().shutdown();
+    				cpCf.channel().close();
     			}
     		});
             
             logger.info(sbs.toString());
+
+        } catch (Exception e) {
+        	throw new RuntimeException("server start fail", e);
+        }
+        
+        try {
             
             cf.channel().closeFuture().sync().addListener(new GenericFutureListener<ChannelFuture>() {
                 public void operationComplete(ChannelFuture future) throws Exception {
-                	
-                	context.requestExecutor().shutdown();
                 	
                     if (future.isSuccess()) {
                         logger.info("socket server shutdown .... bind port={}", context.port());
@@ -136,9 +143,8 @@ public class Server extends ServerOptions {
                 } 
             });
         } catch (Exception e) {
-        	throw new RuntimeException("server start fail", e);
-            
-        } finally {
+        	throw new RuntimeException("server error", e);
+		} finally {
             try {
                 workerGroup.shutdownGracefully().get();
                 bossGroup.shutdownGracefully().get();
@@ -147,9 +153,8 @@ public class Server extends ServerOptions {
             }           
         }
     }
-    
 
-
+   
     private void configurationContext() {
     	
     	RequestExecutor requestTaskExecutor = null;
@@ -167,8 +172,8 @@ public class Server extends ServerOptions {
 
     	int maxConnections = getMaxConnections();
 		ConnectionManagerHandler connectionManagerHandler = new ConnectionManagerHandler(maxConnections);
-		if (context.requestHandler() instanceof ConnectionRejectListener) {
-			connectionManagerHandler.setConnectionRejectListener((ConnectionRejectListener) context.requestHandler());
+		if (requestHandler instanceof ConnectionRejectListener) {
+			connectionManagerHandler.setConnectionRejectListener((ConnectionRejectListener) requestHandler);
 		}
 		
 		this.context = new ServerContext(port, requestHandler, this, new InMemoryRequestFactory(), requestTaskExecutor, connectionManagerHandler);

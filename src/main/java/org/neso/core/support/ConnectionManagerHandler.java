@@ -98,8 +98,8 @@ public class ConnectionManagerHandler extends ChannelInboundHandlerAdapter imple
 	
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		if (connectionQueue.remove(ctx.channel())) {
-			logger.debug("disconnected .. {}", ctx.channel().toString());
+		if (connectionQueue.remove(ctx.channel())) {	//서버 상태 확인해서 로그 출력은 메모리 동기화 필요..	로그를 지우자
+			//logger.debug("disconnected .. {}", ctx.channel().toString());
 		}
 		super.channelInactive(ctx);
 	}

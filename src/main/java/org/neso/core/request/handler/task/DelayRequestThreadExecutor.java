@@ -24,6 +24,7 @@ public class DelayRequestThreadExecutor extends AbstractRequestExecutor {
 	
 	private ThreadPoolExecutor tp;
 
+	private volatile boolean shutdownIng = false;
 	
 	@Override
 	public boolean isRunOnIoThread() {
@@ -41,6 +42,11 @@ public class DelayRequestThreadExecutor extends AbstractRequestExecutor {
 	
 	@Override
 	public boolean registerTask(RequestTask task) {
+		
+		if (shutdownIng) {
+			return false;
+		}
+		
 		try {
 			tp.submit(task);
 			return true;
@@ -51,35 +57,31 @@ public class DelayRequestThreadExecutor extends AbstractRequestExecutor {
 	
 	@Override
 	public void shutdown() {
-		//TODO 검증
+		shutdownIng = true;
+		
 		int notCompleted = tp.getActiveCount() + tp.getQueue().size();
-		logger.info("requestTaskExecutor shutdown (queued task({}) + active task({}))", tp.getQueue().size(), tp.getActiveCount());
 		if (notCompleted == 0) {
 			return;
 		}
 		
-		tp.shutdown();
 		try {
 			if (getShutdownWaitSeconds() == 0) {
+				//즉시 종료
 				tp.shutdownNow();
-				logger.info("Attempts to stop all({}) actively executing tasks", notCompleted);
-			} else {	
-			
+				logger.info("canceled request tasks... ({})", notCompleted);
+			} else if (getShutdownWaitSeconds() == -1) {
+				//무제한 대기
 				tp.shutdown();
-				boolean shutdownResult = false;
-				if (getShutdownWaitSeconds() == -1) {
-					//무제한 대기
-					shutdownResult = tp.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
-				} else {
-					shutdownResult = tp.awaitTermination(getShutdownWaitSeconds(), TimeUnit.SECONDS);
-				}
+			} else {	
 				
-				if (shutdownResult) {
+				tp.shutdown();
+				if (tp.awaitTermination(getShutdownWaitSeconds(), TimeUnit.SECONDS)) {
 					logger.info("request executor shutdown .. All requests were processed normally");
 				} else {
 					logger.info("request executor shutdown .. Not all requests have been fully processed");
+					tp.shutdownNow();
 				}
-			}
+			} 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
