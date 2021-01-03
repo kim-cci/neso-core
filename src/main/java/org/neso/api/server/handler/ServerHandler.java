@@ -27,7 +27,7 @@ public abstract class ServerHandler extends AbstractRequestHandler {
 	
 
 	
-	private Api apiMatch(HeadBodyRequest request) {
+	private Api matchingApi(HeadBodyRequest request) {
 		
 		String apiKey = apiKey(request);
 		if (StringUtils.isEmpty(apiKey)) {
@@ -54,14 +54,14 @@ public abstract class ServerHandler extends AbstractRequestHandler {
 
 		if (client.isConnected()) {
 			
-			Api matchApi = null;
+			Api matchedApi = null;
 			try {
-				matchApi = apiMatch(request);
-				if (matchApi == null) {
+				matchedApi = matchingApi(request);
+				if (matchedApi == null) {
 					throw new ApiNotFoundException(request, null);
 				}
 				
-				request.addAttribute(MATCH_API_ATTR_NAME, matchApi);
+				request.addAttribute(MATCH_API_ATTR_NAME, matchedApi);
 			} catch (Exception e) {
 				throw new ApiNotFoundException(request, e);
 			}
@@ -69,7 +69,7 @@ public abstract class ServerHandler extends AbstractRequestHandler {
 			byte[] response = preApiExecute(client, request);
 				
 			if (response == null) {
-				response = matchApi.handle(request);
+				response = matchedApi.handle(request);
 
 				byte[] postR = postApiExecute(client, request, response);
 				if (postR != null) {
