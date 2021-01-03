@@ -13,6 +13,8 @@ public interface RequestHandler {
 	
 	public void init(ServerContext context);
 	
+	public void destroy();
+	
 	/**
 	 * 클라이언트 접속 시 호출
 	 * @param client 접속한 클라이인트

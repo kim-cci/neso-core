@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractRequestHandler implements RequestHandler {
 
-	
 
 	final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -33,6 +32,11 @@ public abstract class AbstractRequestHandler implements RequestHandler {
 		
 	}
 
+	@Override
+	public void destroy() {
+		
+	}
+	
 	@Override
 	public void onConnect(Client client) {
 		

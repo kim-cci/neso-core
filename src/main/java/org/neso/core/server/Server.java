@@ -119,7 +119,18 @@ public class Server extends ServerOptions {
             Runtime.getRuntime().addShutdownHook(new Thread() {
     			@Override
     			public void run() {
-    				context.requestExecutor().shutdown();
+    				try {
+    					context.requestExecutor().shutdown();
+    				} catch (Exception e) {
+    					logger.error("shutdown exception ", e);
+					}
+    				
+    				try {
+    					requestHandler.destroy();
+    				} catch (Exception e) {
+    					logger.error("shutdown exception ", e);
+					}
+    				
     				cpCf.channel().close();
     			}
     		});
