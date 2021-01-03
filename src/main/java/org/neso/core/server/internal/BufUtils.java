@@ -1,4 +1,4 @@
-package org.neso.core.netty;
+package org.neso.core.server.internal;
 
 import static io.netty.util.internal.StringUtil.NEWLINE;
 

@@ -1,4 +1,4 @@
-package org.neso.core.netty;
+package org.neso.core.server.internal;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -12,10 +12,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neso.core.exception.ClientAbortException;
+import org.neso.core.request.Client;
 import org.neso.core.request.factory.RequestFactory;
 import org.neso.core.request.handler.RequestHandler;
 import org.neso.core.request.internal.OperableHeadBodyRequest;
 import org.neso.core.server.ServerContext;
+import org.neso.core.server.request.task.RequestTask;
+import org.neso.core.support.RequestRejectListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -252,7 +255,7 @@ public class ClientAgent extends SessionClientImpl {
     			
     			currentRequest.setBodyBytes(readedBuf);
     			
-    			requestHandler.onRequest(ClientAgent.this, currentRequest);
+    			completeReadRequest(ClientAgent.this, currentRequest);
         		
         		if (connectionOriented) {	//요청을 계속 받을 수 있다면. 새 리퀘스트를 만들어 놓고..
         			this.currentRequest = requestFactory.newHeadBodyRequest(ClientAgent.this);
@@ -273,6 +276,37 @@ public class ClientAgent extends SessionClientImpl {
     			logger.error("occurred exception.. requestHandler's onExceptionRead", e);
     		}
     	}
+    }
+    
+
+    
+    private void completeReadRequest(Client client, OperableHeadBodyRequest request) {
+
+		RequestTask task = new RequestTask(client, request);
+		
+		ServerContext serverContext = client.getServerContext();
+		
+		if (!serverContext.requestExecutor().registerTask(task)) {
+			logger.debug("request cant registered in the request pool, {}", client.toString());
+			
+			byte[] rejectMessage = "server is too busy".getBytes();
+			if (serverContext.requestHandler() instanceof RequestRejectListener) {
+				
+				RequestRejectListener listener = (RequestRejectListener) serverContext.requestHandler();
+			
+				try {
+					rejectMessage = listener.onRequestReject(serverContext, serverContext.options().getMaxRequests(), request);
+				} catch (Exception e) {
+					logger.error("occurred requestRejectListner's onRequestReject", e);
+				}
+			}
+			
+			ByteBasedWriter writer = client.getWriter();
+			writer.write(rejectMessage);
+			writer.close();
+		} else {
+			//logger.debug("request is registered in the request pool");
+		}
     }
     
     

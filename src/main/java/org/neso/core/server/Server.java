@@ -15,11 +15,11 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 import java.lang.reflect.Constructor;
 
-import org.neso.core.netty.ByteLengthBasedInboundHandler;
-import org.neso.core.netty.ClientAgent;
 import org.neso.core.request.factory.InMemoryRequestFactory;
 import org.neso.core.request.handler.RequestHandler;
-import org.neso.core.request.handler.task.RequestExecutor;
+import org.neso.core.server.internal.ByteLengthBasedInboundHandler;
+import org.neso.core.server.internal.ClientAgent;
+import org.neso.core.server.request.task.RequestExecutor;
 import org.neso.core.support.ConnectionManagerHandler;
 import org.neso.core.support.ConnectionRejectListener;
 import org.slf4j.Logger;

@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.neso.api.server.handler.AbstractWirableServerHandler;
 import org.neso.core.exception.HeaderParsingException;
+import org.neso.core.request.HeadBodyRequest;
 import org.neso.core.request.HeadRequest;
 
 /**
@@ -48,8 +49,8 @@ public class BodyLengthHeadServerHandler extends AbstractWirableServerHandler {
 	}
 	
 	@Override
-	public String apiKeyFromBody(byte[] body) {
-		return new String(Arrays.copyOfRange(body, apiIdFieldOffsetOnBody, (apiIdFieldOffsetOnBody + apiIdFieldLengthOnBody)), getCharset()).trim();
+	public String apiKey(HeadBodyRequest request) {
+		return new String(Arrays.copyOfRange(request.getHeadBytes(), apiIdFieldOffsetOnBody, (apiIdFieldOffsetOnBody + apiIdFieldLengthOnBody)), getCharset()).trim();
 	}
-
+	
 }

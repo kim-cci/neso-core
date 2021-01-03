@@ -1,6 +1,6 @@
 package org.neso.core.request;
 
-import org.neso.core.netty.ByteBasedWriter;
+import org.neso.core.server.internal.ByteBasedWriter;
 
 /**
  * 

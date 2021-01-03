@@ -5,6 +5,7 @@ import java.util.Arrays;
 import org.neso.api.Api;
 import org.neso.api.server.handler.AbstractWirableServerHandler;
 import org.neso.core.exception.HeaderParsingException;
+import org.neso.core.request.HeadBodyRequest;
 import org.neso.core.request.HeadRequest;
 
 /**
@@ -40,7 +41,7 @@ public class SingleApiServerHandler extends AbstractWirableServerHandler {
 	}
 	
 	@Override
-	protected String apiKeyFromHead(byte[] head) {
+	public String apiKey(HeadBodyRequest request) {
 		return "_SINGLE_API";
 	}
 }

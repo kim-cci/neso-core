@@ -36,13 +36,7 @@ public interface RequestHandler {
 	 */
     public int bodyLength(HeadRequest request);
     
-    /**
-     * 헤더와 바디를 모두 읽으면 호출
-     * @param client 접속 정보
-     * @param request 요청정보
-     */
-    public void onRequest(Client client, HeadBodyRequest request);
-    
+
     /**
      * request 처리  준비가 되면 호출 
      * @param client 요청 클라이언트

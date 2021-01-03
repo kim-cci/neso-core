@@ -2,7 +2,7 @@ package org.neso.core.server;
 
 import org.neso.core.request.factory.RequestFactory;
 import org.neso.core.request.handler.RequestHandler;
-import org.neso.core.request.handler.task.RequestExecutor;
+import org.neso.core.server.request.task.RequestExecutor;
 import org.neso.core.support.ConnectionManager;
 
 public class ServerContext {

@@ -1,7 +1,7 @@
 package org.neso.core.server;
 
-import org.neso.core.request.handler.task.BasicRequestThreadExecutor;
-import org.neso.core.request.handler.task.RequestExecutor;
+import org.neso.core.server.request.task.BasicRequestThreadExecutor;
+import org.neso.core.server.request.task.RequestExecutor;
 
 import io.netty.channel.ChannelOption;
 import io.netty.handler.logging.LogLevel;

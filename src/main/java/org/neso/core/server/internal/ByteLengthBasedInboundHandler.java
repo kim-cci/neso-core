@@ -1,9 +1,9 @@
-package org.neso.core.netty;
+package org.neso.core.server.internal;
 
 import java.util.concurrent.TimeUnit;
 
 import org.neso.core.exception.OverReadBytesException;
-import org.neso.core.netty.ByteLengthBasedReader.ReaderStatus;
+import org.neso.core.server.internal.ByteLengthBasedReader.ReaderStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
