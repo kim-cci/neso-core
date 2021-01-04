@@ -50,16 +50,19 @@ public abstract class AbstractRequestHandler implements RequestHandler {
 
     @Override
     public void onExceptionDoRequest(Client client, HeadBodyRequest request, Throwable exception) {
+    	logger.error("exception do request", exception);
         client.disconnect();
     }
     
 	@Override
 	public void onExceptionRead(Client client, Throwable exception) {
+		logger.error("exception on read", exception);
 		client.disconnect();
 	}
 
 	@Override
 	public void onExceptionWrite(Client client, Throwable exception) {
+		logger.error("exception on write", exception);
 		client.disconnect();
 	}
 }

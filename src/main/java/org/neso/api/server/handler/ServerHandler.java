@@ -42,6 +42,15 @@ public abstract class ServerHandler extends AbstractRequestHandler {
 		return null;
     }
 	
+	public void registApi(String apiKey, Class<? extends Api> apiClass) {
+		try {
+			registApi(apiKey, apiClass.newInstance());
+		} catch (InstantiationException iste) {
+			throw new RuntimeException(iste);
+		} catch (IllegalAccessException iae) {
+			throw new RuntimeException(iae);
+		}
+	}
 	
 	public void registApi(String apiKey, Api api) {
 		apiHandlerMap.put(apiKey, api);

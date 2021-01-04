@@ -7,11 +7,11 @@ import io.netty.buffer.ByteBuf;
  */
 public interface ByteBasedWriter {
 
-	public void write(byte b);
+	public ByteBasedWriter write(byte b);
 	
-	public void write(byte[] bytes);
+	public ByteBasedWriter write(byte[] bytes);
 	
-	public void write(ByteBuf buf);
+	public ByteBasedWriter write(ByteBuf buf);
 	
 	public void close();
 }

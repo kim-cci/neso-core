@@ -77,32 +77,63 @@ public abstract class ServerOptions implements ServerUI {
 		return requestExecutorshutdownWaitSeconds;
 	}
 	
+	/**
+	 * -1 (요청 완료까지 대기) : default
+	 * 0 : 요청 처리 중지하고 바로 종료
+	 * 1 ~ : 설정된 Second만큼 대기 후 종료
+	 * @param requestExecutorshutdownWaitSeconds
+	 * @return ServerOptions
+	 */
 	public ServerOptions requestExecutorshutdownWaitSeconds(int requestExecutorshutdownWaitSeconds) {
 		this.requestExecutorshutdownWaitSeconds = requestExecutorshutdownWaitSeconds;
 		return this;
 	}
 	
-	
+	/**
+	 * default : false
+	 * @param connectionOriented 접속 유지 여부
+	 * @return ServerOptions
+	 */
 	public ServerOptions connectionOriented(boolean connectionOriented) {
 		this.connectionOriented = connectionOriented;
 		return this;
 	}
-
+	
+	/**
+	 * default : 100
+	 * @param maxRequests 최대 요청 갯 수
+	 * @return ServerOptions
+	 */
 	public ServerOptions maxRequests(int maxRequests) {
 		this.maxRequests = maxRequests;
 		return this;
 	}
 
+	/**
+	 * default : BasicRequestThreadExecutor.class
+	 * @param requestExecutorType
+	 * @return ServerOptions
+	 */
 	public ServerOptions requestExecutorType(Class<? extends RequestExecutor> requestExecutorType) {
 		this.requestExecutorType = requestExecutorType;
 		return this;
 	}
 	
-	public ServerOptions readTimeoutMillisOnRead(int readTimeoutMillis) {
+	/**
+	 * default : 5000 (5 Second)
+	 * @param readTimeoutMillis
+	 * @return ServerOptions
+	 */
+	public ServerOptions readTimeoutMillis(int readTimeoutMillis) {
 		this.readTimeoutMillis = readTimeoutMillis;
 		return this;
 	}
-
+	
+	/**
+	 * default : 2000 (2 Second)
+	 * @param writeTimeoutMillis
+	 * @return ServerOptions
+	 */
 	public ServerOptions writeTimeoutMillis(int writeTimeoutMillis) {
 		if (writeTimeoutMillis < 1) {
 	  		throw new RuntimeException("writeTimeoutMillis is bigger than zero");
@@ -111,6 +142,11 @@ public abstract class ServerOptions implements ServerUI {
 		return this;
 	}
 
+	/**
+	 * default : -1 (제한 없음)
+	 * @param maxConnections
+	 * @return ServerOptions
+	 */
 	public ServerOptions maxConnections(int maxConnections) {
 		if (maxConnections < 1) {
 	  		throw new RuntimeException("maxConnections is bigger than zero");
@@ -120,16 +156,31 @@ public abstract class ServerOptions implements ServerUI {
 		return this;
 	}
 
+	/**
+	 * default : -1 (제한 없음)
+	 * @param maxRequestBodyLength
+	 * @return ServerOptions
+	 */
 	public ServerOptions maxRequestBodyLength(int maxRequestBodyLength) {
 		this.maxRequestBodyLength = maxRequestBodyLength;
 		return this;
 	}
 
+	/**
+	 * default : false
+	 * @param inoutLogging
+	 * @return ServerOptions
+	 */
 	public ServerOptions inoutLogging(boolean inoutLogging) {
 		this.inoutLogging = inoutLogging;
 		return this;
 	}
 	
+	/**
+	 * default : null (로깅하지 않음)
+	 * @param pipeLineLogLevel
+	 * @return
+	 */
 	public ServerOptions pipeLineLogLevel(LogLevel pipeLineLogLevel) {
 		this.pipeLineLogLevel = pipeLineLogLevel;
 		return this;

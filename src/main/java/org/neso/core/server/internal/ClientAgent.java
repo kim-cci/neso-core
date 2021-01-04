@@ -22,6 +22,7 @@ import org.neso.core.support.RequestRejectListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * 
  * request 처리 스레드에 의해서 공유된다.
@@ -38,7 +39,6 @@ public class ClientAgent extends SessionClientImpl {
 	final private ReentrantLock writeLock;
 
     private boolean writable = true;	//락 획득 이후에 참조 됨 - 메모리 동기화 필요없음
-    
     
     final private ServerContext serverContext;
     
@@ -151,7 +151,6 @@ public class ClientAgent extends SessionClientImpl {
     	private OperableHeadBodyRequest currentRequest;
     	
     	private ReaderStatus readStatus = null;
-
     	
     	final private RequestFactory requestFactory;
         
@@ -195,7 +194,14 @@ public class ClientAgent extends SessionClientImpl {
         	}
         	
         	if (!currentRequest.isReadedHead()) {
-        		int headLength = requestHandler.headLength();
+        		int headLength = 0;
+        		
+        		try {
+        			headLength = requestHandler.headLength();
+        		} catch (Exception e) {
+        			throw new RuntimeException("invalid head length", e);
+				}
+        		
         		if (headLength < 1) {
         			throw new RuntimeException("Header length cannot be zero or a negative number ");
         		}
@@ -203,7 +209,12 @@ public class ClientAgent extends SessionClientImpl {
         		
     		} else { //if (!currentRequest.isReadedBody()) 
     			
-    			int bodyLength = requestHandler.bodyLength(currentRequest);
+    			int bodyLength = 0;
+    			try {
+    				requestHandler.bodyLength(currentRequest);
+    			} catch (Exception e) {
+					throw new RuntimeException("invalid body length", e);
+				}
     			
     			if (maxRequestBodyLength > 0) {
     				if (maxRequestBodyLength < bodyLength) {
@@ -314,7 +325,7 @@ public class ClientAgent extends SessionClientImpl {
     	
     	private ChannelFuture lastCf = socketChannel().newSucceededFuture();
     	
-       
+    	private boolean didWrite = false;
         
         final private int writeTimeoutMillis;
         
@@ -328,61 +339,65 @@ public class ClientAgent extends SessionClientImpl {
     	}
     	
     	@Override
-    	public void write(byte b) {
-    		write(new byte[]{b});
+    	public ByteBasedWriter write(byte b) {
+    		return write(new byte[]{b});
+    		
+    		
     	}
     	
 		@Override
-		public void write(byte[] bytes) {
+		public ByteBasedWriter write(byte[] bytes) {
 			ByteBuf buf =  socketChannel().alloc().buffer(bytes.length);
 			buf.writeBytes(bytes);
-			write(buf);
+			return write(buf);
 		}
 
 		@Override
-		public void write(final ByteBuf buf) {
+		public ByteBasedWriter write(final ByteBuf buf) {
+			if (!writable) {
+				//
+				return this;
+			}
 			
-			if (writable) {
-
-				if (isConnected()) {
+			
+			if (isConnected()) {
+				
+				if (inoutLogging) {
+					logger.info(BufUtils.bufToString("WRITE RESPONSE ", buf));	//TODO 리스너안으로 로그를 넣어야 하는데.. 과연 BUF복사 비용까지.. 들이면서 해야하나..
+				}
+				
+				final ChannelFuture cf = lastCf.channel().write(buf);
+				didWrite = true;
+				final ScheduledFuture<?> writeTimeoutFuture = socketChannel().eventLoop().schedule(new Runnable() {
 					
-					if (inoutLogging) {
-						logger.info(BufUtils.bufToString("WRITE RESPONSE ", buf));	//TODO 리스너안으로 로그를 넣어야 하는데.. 과연 BUF복사 비용까지.. 들이면서 해야하나..
-					}
-					
-					final ChannelFuture cf = lastCf.channel().write(buf);
-					final ScheduledFuture<?> writeTimeoutFuture = socketChannel().eventLoop().schedule(new Runnable() {
-						
-						@Override
-						public void run() {
-							if (!cf.isDone()) {
-								if (writable) {
-									requestHandler.onExceptionWrite(ClientAgent.this, WriteTimeoutException.INSTANCE);
-									writable = false;
-								}
+					@Override
+					public void run() {
+						if (!cf.isDone()) {
+							if (writable) {
+								requestHandler.onExceptionWrite(ClientAgent.this, WriteTimeoutException.INSTANCE);
+								writable = false;
 							}
 						}
-					}, writeTimeoutMillis, TimeUnit.MILLISECONDS);
-
-					lastCf = cf.addListener(new ChannelFutureListener() {
-						
-						@Override
-						public void operationComplete(ChannelFuture future) throws Exception {
-							writeTimeoutFuture.cancel(false);
-						}
-					});
-					
-	    		} else {
-	    			//logger.debug("접속 종료로 인해...쓰기 작업 중단");
-					if (writable) {
-						requestHandler.onExceptionWrite(ClientAgent.this, new ClientAbortException(ClientAgent.this));
-						writable = false;
 					}
-	    		}
+				}, writeTimeoutMillis, TimeUnit.MILLISECONDS);
+
+				lastCf = cf.addListener(new ChannelFutureListener() {
+					
+					@Override
+					public void operationComplete(ChannelFuture future) throws Exception {
+						writeTimeoutFuture.cancel(false);
+					}
+				});
 				
-			} else {
-				//logger.debug("쓰기 불가로 인해 쓰기 작업 중단");
-			}
+    		} else {
+    			//logger.debug("접속 종료로 인해...쓰기 작업 중단");
+				if (writable) {
+					requestHandler.onExceptionWrite(ClientAgent.this, new ClientAbortException(ClientAgent.this));
+					writable = false;
+				}
+    		}
+			
+			return this;
 		}
 
 
@@ -391,7 +406,7 @@ public class ClientAgent extends SessionClientImpl {
 			
 			socketChannel().flush();
 			
-			if (!connectionOriented) {
+			if (!connectionOriented && didWrite) {
 				if (writable) {
 					disconnect();
 					writable = false;
