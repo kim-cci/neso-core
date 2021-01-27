@@ -18,7 +18,7 @@
 ## quick start & example
 회원 가입과 조회 API를 가진 전문 통신 구현 샘플입니다.
 
-1. Api 인터페이스 구현(서비스 레이어)
+1. Api interface를 구현(서비스 레이어)하여 회원조회와 회원가입 api를 생성
 ````java
 //회원번호 조회 API 
 public class SearchApi implements Api {
