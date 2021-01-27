@@ -16,9 +16,11 @@
 <br>
 
 ## quick start & example
-- Api 구현(서비스 레이어)
+회원 가입과 조회 API를 가진 전문 통신 구현 샘플입니다.
+
+1. Api 인터페이스 구현(서비스 레이어)
 ````java
-//회원번호 조회 API
+//회원번호 조회 API 
 public class SearchApi implements Api {
 	
 	private Service service;
@@ -36,21 +38,11 @@ public class SearchApi implements Api {
 //회원 가입 API
 public class SignUpApi implements Api {
 	
-	private Service service;
-	
-	@Override
-	public byte[] handle(HeadBodyRequest request) throws Exception {
-		
-		byte[] bodyBytes = request.getBodyBytes();
-		//서비스 레이어 
-		//service.join(...
-		return "ok".getBytes(); //성공 응답
-	}
+	....
 }
 ````
 
-  ServerHandler구현체와 Server로 서버 시작
-  10002번 포트로 서버 기동
+2. ServerHandler 구현체와 Server를 이용하여 API서버 생성 및 구동 
 ````java
 public static void main(String[] args) {
 		
@@ -64,42 +56,22 @@ public static void main(String[] args) {
 		.start();
 }
 ````
+
+위처럼 간단하게 전문 통신 서버를 구현할 수 있도록 고수준 API도 제공하지만
+경우에 따라 커스트마이징 할 수 있도록 다양한 레벨의 API를 제공합니다.
+
+* [조금 더 상세한 시작 가이드](https://jronin.tistory.com/111)
+
 <br>
 <br>
-RequestHandler(ServerHandler 상위 인터페이스) : 범용적
 
-````java
-public static void main(String[] args) {
-		
-	new Server(new RequestHandlerAdapter() {
-			
-		@Override
-		public int headLength() {
-			return 20;
-		}
-		
-		@Override
-		public int bodyLength(HeadRequest request) {
-			return Utils.byteToInt(request.getHeadBytes());
-		}
-		
-		@Override
-		public void doRequest(Client client, HeadBodyRequest request) throws Exception {
-			//사용자 요청 처리
-		}
-			
-		public void onConnect(Client client) {
-			//사용자 접속 처리
-		};
+## maven repository
+<dependency> 
+	<groupId>org.osdkim.neso</groupId> 
+	<artifactId>neso-core</artifactId> 
+	<version>0.9.3</version> 
+</dependency>
 
-	}	, 10002)
-	.maxConnections(5000)
-	.connectionOriented(true)
-	.requestExecutorType(IoThreadExecutor.class)	//io스레드에서 요청처리
-	.readTimeoutMillisOnRead(1000)
-	.start();
-}
-````
 <br>
 <br>
 
@@ -117,4 +89,3 @@ public static void main(String[] args) {
  * [개인 블로그](https://jronin.tistory.com/93)
 <br>
 <br>
-## repositoryㅡ
