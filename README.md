@@ -70,7 +70,7 @@ public static void main(String[] args) {
 <dependency> 
 	<groupId>org.osdkim.neso</groupId> 
 	<artifactId>neso-core</artifactId> 
-	<version>0.9.3</version> 
+	<version>0.9.4</version> 
 </dependency>
 ````
 <br>
