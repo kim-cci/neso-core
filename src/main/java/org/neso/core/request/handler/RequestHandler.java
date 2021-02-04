@@ -5,8 +5,14 @@ import java.nio.charset.Charset;
 import org.neso.core.request.Client;
 import org.neso.core.request.HeadBodyRequest;
 import org.neso.core.request.HeadRequest;
+import org.neso.core.server.Server;
 import org.neso.core.server.ServerContext;
 
+/**
+ * 요청 처리 핸들러
+ * 
+ * {@link Server}
+ */
 public interface RequestHandler {
 	
 	public Charset getCharset();

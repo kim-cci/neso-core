@@ -11,12 +11,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 기본 요청 처리 스레드 정책 
+ * 기본 요청 처리기(스레드풀 사용) 
  * 
+ * 스레드풀 정책:
  * 상시 스레드는 jvm이용가능 코어 수 * 2
  * 대기큐 없음
  * 5초후 임시 스레드 반환
- * 
  * 상시 스레드 초과시, 바로 임시스레드 투입 
  */
 public class BasicRequestThreadExecutor extends AbstractRequestExecutor {

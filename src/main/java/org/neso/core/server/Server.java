@@ -25,6 +25,11 @@ import org.neso.core.support.ConnectionRejectListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 서버 실행기
+ * 
+ * {@link RequestHandler} 요청 처리 위임
+ */
 public class Server extends ServerOptions {
 	
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());

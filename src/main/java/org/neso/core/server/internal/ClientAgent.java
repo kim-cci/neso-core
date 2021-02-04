@@ -68,11 +68,7 @@ public class ClientAgent extends SessionClientImpl {
 	public ByteLengthBasedReader getReader() {
 		return this.reader;
 	}
-    
-    @Override
-    public boolean isConnected() {
-    	return socketChannel().isOpen();
-    }
+
 	
     @Override
     public void disconnect() {

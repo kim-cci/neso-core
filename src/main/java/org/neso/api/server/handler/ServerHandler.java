@@ -15,7 +15,11 @@ import org.neso.core.server.internal.ByteBasedWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * Api 개념을 적용한 requestHandler
+ * 
+ * 
+ */
 public abstract class ServerHandler extends AbstractRequestHandler {
 	
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -24,9 +28,7 @@ public abstract class ServerHandler extends AbstractRequestHandler {
 	
 	private Map<String, Api> apiHandlerMap = new ConcurrentHashMap<String, Api>();
 
-	
 
-	
 	private Api matchingApi(HeadBodyRequest request) {
 		
 		String apiKey = apiKey(request);

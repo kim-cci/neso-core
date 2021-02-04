@@ -13,6 +13,7 @@ public interface HeadBodyRequest extends HeadRequest {
 	 * @return head + body byte array
 	 */
 	public byte[] getAllBytes();
-
+	
+	
 	public ByteBuf getDirectBodyBuf();
 }

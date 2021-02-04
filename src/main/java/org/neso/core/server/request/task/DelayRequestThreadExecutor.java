@@ -11,11 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 지연 요청 처리 스레드 정책 
+ * 지연 요청 처리(스레드풀 사용) 
  * 
+ * 스레드풀 정책:
  * 상시 스레드 = 최대 스레드 
  * 대기큐 = 최대 스레드/ 2
- * 
  * 상시 스레드를 초과할 경우, 대기큐에서 대기
  */
 public class DelayRequestThreadExecutor extends AbstractRequestExecutor {

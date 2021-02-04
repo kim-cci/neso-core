@@ -3,16 +3,10 @@ package org.neso.core.request;
 import org.neso.core.server.internal.ByteBasedWriter;
 
 /**
- * 
+ * client 조작 인터페이스
  *
  */
 public interface Client extends Session {
- 
-	/**
-	 * 
-	 * @return 커넥션 유지 여부
-	 */
-	public boolean isConnected();
 	
 	/**
 	 * 클라이언트 접속 끊기

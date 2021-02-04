@@ -9,6 +9,11 @@ import org.neso.core.server.ServerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 상속을 위한 adapter성 클래스
+ * 
+ * hook메소드 구현
+ */
 public abstract class AbstractRequestHandler implements RequestHandler {
 
 

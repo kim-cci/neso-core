@@ -5,6 +5,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * io스레드가(에서) request 처리
+ *	
+ * io스레드 : netty의 입출력 담당 스레드
+ * 
+ * 최대 동시 요청수보다 io스레드 숫자가 커야 되므로 io스레드 숫자보다 maxRequets가 커야 함
+ * @see Server start()
+ */
 public class IoThreadExecutor extends AbstractRequestExecutor {
 	
 	private AtomicInteger inProgressRequestTaskCount = new AtomicInteger(0);

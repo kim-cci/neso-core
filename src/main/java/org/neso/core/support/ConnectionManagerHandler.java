@@ -14,6 +14,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 접속 관리기
+ * 내부 오브젝트
+ */
 @Sharable
 public class ConnectionManagerHandler extends ChannelInboundHandlerAdapter implements ConnectionManager {
  

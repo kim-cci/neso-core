@@ -3,7 +3,7 @@ package org.neso.core.server.internal;
 import io.netty.buffer.ByteBuf;
 
 /**
- * 
+ * 바이트 길이 기준으로 read
  * {@link ByteLengthBasedInboundHandler}
  * 
  * 

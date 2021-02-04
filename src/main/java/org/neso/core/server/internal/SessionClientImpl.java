@@ -9,10 +9,8 @@ import java.util.Map;
 import org.neso.core.request.Client;
 
 /**
- * Session 구현체
+ * {@link Clinet} 구현체
  * client 구현체이지만 session기능만 정의
- * 
- * {@link ClientAgent} 
  */
 public abstract class SessionClientImpl implements Client {
 
@@ -27,6 +25,11 @@ public abstract class SessionClientImpl implements Client {
 		this.connectionTime = System.currentTimeMillis();
     	this.sc = sc;
 	}
+    
+    @Override
+    public boolean isConnected() {
+    	return this.sc.isOpen();
+    }
     
 	@Override
     public long getConnectionTime() {

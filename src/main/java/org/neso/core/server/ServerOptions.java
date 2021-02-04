@@ -6,6 +6,11 @@ import org.neso.core.server.request.task.RequestExecutor;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.logging.LogLevel;
 
+/**
+ * 서버 실행 옵션 추상화
+ * {@link Server}
+ *
+ */
 public abstract class ServerOptions implements ServerUI {
 	
 	
