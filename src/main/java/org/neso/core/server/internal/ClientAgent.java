@@ -24,8 +24,10 @@ import org.slf4j.LoggerFactory;
 
 
 /**
+ * Client구현체
  * 
- * request 처리 스레드에 의해서 공유된다.
+ * 쓰기&접속종료 작업 시 스레드 간 경합 발생
+ * getWriter() 로 writer 선점하여 락 획득 후 쓰기 작업 가능
  * 
  */
 public class ClientAgent extends SessionClientImpl {
@@ -38,7 +40,7 @@ public class ClientAgent extends SessionClientImpl {
 	
 	final private ReentrantLock writeLock;
 
-    private boolean writable = true;	//락 획득 이후에 참조 됨 - 메모리 동기화 필요없음
+    private boolean writable = true;	//공유 변수 : 락 획득 이후에 참조되기 때문에 메모리 동기화 필요없음
     
     final private ServerContext serverContext;
     
