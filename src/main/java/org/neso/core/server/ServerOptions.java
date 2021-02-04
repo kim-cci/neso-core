@@ -86,8 +86,8 @@ public abstract class ServerOptions implements ServerUI {
 	 * -1 (요청 완료까지 대기) : default
 	 * 0 : 요청 처리 중지하고 바로 종료
 	 * 1 ~ : 설정된 Second만큼 대기 후 종료
-	 * @param requestExecutorshutdownWaitSeconds
-	 * @return ServerOptions
+	 * @param requestExecutorshutdownWaitSeconds 셧다운시 request 처리 대기 시간
+	 * @return ServerOptions options
 	 */
 	public ServerOptions requestExecutorshutdownWaitSeconds(int requestExecutorshutdownWaitSeconds) {
 		this.requestExecutorshutdownWaitSeconds = requestExecutorshutdownWaitSeconds;
@@ -97,7 +97,7 @@ public abstract class ServerOptions implements ServerUI {
 	/**
 	 * default : false
 	 * @param connectionOriented 접속 유지 여부
-	 * @return ServerOptions
+	 * @return ServerOptions options
 	 */
 	public ServerOptions connectionOriented(boolean connectionOriented) {
 		this.connectionOriented = connectionOriented;
@@ -116,7 +116,7 @@ public abstract class ServerOptions implements ServerUI {
 
 	/**
 	 * default : BasicRequestThreadExecutor.class
-	 * @param requestExecutorType
+	 * @param requestExecutorType 요청처리실행기 타입
 	 * @return ServerOptions
 	 */
 	public ServerOptions requestExecutorType(Class<? extends RequestExecutor> requestExecutorType) {
@@ -126,7 +126,7 @@ public abstract class ServerOptions implements ServerUI {
 	
 	/**
 	 * default : 5000 (5 Second)
-	 * @param readTimeoutMillis
+	 * @param readTimeoutMillis readTimeout milli second
 	 * @return ServerOptions
 	 */
 	public ServerOptions readTimeoutMillis(int readTimeoutMillis) {
@@ -136,7 +136,7 @@ public abstract class ServerOptions implements ServerUI {
 	
 	/**
 	 * default : 2000 (2 Second)
-	 * @param writeTimeoutMillis
+	 * @param writeTimeoutMillis writeTimeout milli second
 	 * @return ServerOptions
 	 */
 	public ServerOptions writeTimeoutMillis(int writeTimeoutMillis) {
@@ -149,7 +149,7 @@ public abstract class ServerOptions implements ServerUI {
 
 	/**
 	 * default : -1 (제한 없음)
-	 * @param maxConnections
+	 * @param maxConnections 최대 접속 수
 	 * @return ServerOptions
 	 */
 	public ServerOptions maxConnections(int maxConnections) {
@@ -163,7 +163,7 @@ public abstract class ServerOptions implements ServerUI {
 
 	/**
 	 * default : -1 (제한 없음)
-	 * @param maxRequestBodyLength
+	 * @param maxRequestBodyLength 최대 요청 수
 	 * @return ServerOptions
 	 */
 	public ServerOptions maxRequestBodyLength(int maxRequestBodyLength) {
@@ -173,7 +173,7 @@ public abstract class ServerOptions implements ServerUI {
 
 	/**
 	 * default : false
-	 * @param inoutLogging
+	 * @param inoutLogging 입출력 로그 활성화 여부
 	 * @return ServerOptions
 	 */
 	public ServerOptions inoutLogging(boolean inoutLogging) {
@@ -183,8 +183,8 @@ public abstract class ServerOptions implements ServerUI {
 	
 	/**
 	 * default : null (로깅하지 않음)
-	 * @param pipeLineLogLevel
-	 * @return
+	 * @param pipeLineLogLevel pipeline 로그 출력 여부
+	 * @return ServerOptions
 	 */
 	public ServerOptions pipeLineLogLevel(LogLevel pipeLineLogLevel) {
 		this.pipeLineLogLevel = pipeLineLogLevel;

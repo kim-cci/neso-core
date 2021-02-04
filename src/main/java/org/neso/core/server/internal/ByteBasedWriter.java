@@ -1,11 +1,12 @@
 package org.neso.core.server.internal;
 
+import ch.qos.logback.core.net.server.Client;
 import io.netty.buffer.ByteBuf;
 
 /**
  * 바이트 단위로 쓰는 writer
  * 
- * {@link Client} getWriter()
+ * {@link Client} getWriter method
  */
 public interface ByteBasedWriter {
 

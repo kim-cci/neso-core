@@ -10,8 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *	
  * io스레드 : netty의 입출력 담당 스레드
  * 
- * 최대 동시 요청수보다 io스레드 숫자가 커야 되므로 io스레드 숫자보다 maxRequets가 커야 함
- * @see Server start()
+ * 최대 동시 요청수보다 io스레드 숫자가 커야 되므로 io스레드 숫자보다 maxRequets가 커야 함  (Server.start() 참고)
  */
 public class IoThreadExecutor extends AbstractRequestExecutor {
 	

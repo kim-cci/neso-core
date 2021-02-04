@@ -9,7 +9,7 @@ import java.util.Map;
 import org.neso.core.request.Client;
 
 /**
- * {@link Clinet} 구현체
+ * {@link Client}
  * client 구현체이지만 session기능만 정의
  */
 public abstract class SessionClientImpl implements Client {
