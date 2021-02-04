@@ -1,4 +1,4 @@
-package org.neso.core.support;
+package org.neso.core.server.internal;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -11,6 +11,8 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.neso.core.support.ConnectionManager;
+import org.neso.core.support.ConnectionRejectListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
