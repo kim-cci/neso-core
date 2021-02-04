@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.neso.api.server.handler.AbstractWirableServerHandler;
 import org.neso.core.exception.HeaderParsingException;
+import org.neso.core.request.HeadBodyRequest;
 import org.neso.core.request.HeadRequest;
 
 
@@ -16,11 +17,11 @@ import org.neso.core.request.HeadRequest;
  *  ------------------------------------------------------------------------
  * [0][0][0][6][2][0][1][9][0][1][0][1][S][E][A][R][C][H] [b][b][b][b][b][b]
  * 
- * headLength -> 18
- * bodyLengthFiledOffset -> 0
- * bodyLengthFiledLength -> 4
- * apiIdFieldOffset -> 12
- * apiIdFieldLength -> 6
+ * headLength = 18
+ * bodyLengthFiledOffset = 0
+ * bodyLengthFiledLength = 4
+ * apiIdFieldOffset = 12
+ * apiIdFieldLength = 6
  */
 
 public class HeadBasedServerHandler extends AbstractWirableServerHandler {
@@ -58,14 +59,11 @@ public class HeadBasedServerHandler extends AbstractWirableServerHandler {
 	}
 	
 	@Override
-	public String apiKeyFromHead(byte[] head) {
+	public String apiKey(HeadBodyRequest request) {
 		try {
-			return new String(Arrays.copyOfRange(head, apiIdFieldOffset, (apiIdFieldOffset + apiIdFieldLength)), getCharset()).trim();
+			return new String(Arrays.copyOfRange(request.getHeadBytes(), apiIdFieldOffset, (apiIdFieldOffset + apiIdFieldLength)), getCharset()).trim();
 		} catch (Exception e) {
-			throw new HeaderParsingException("invalid api key", head, e);
+			throw new HeaderParsingException("invalid api key", request.getHeadBytes(), e);
 		}
 	}
-
-
-
 }

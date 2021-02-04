@@ -1,9 +1,9 @@
-package org.neso.core.netty;
+package org.neso.core.server.internal;
 
 import java.util.concurrent.TimeUnit;
 
 import org.neso.core.exception.OverReadBytesException;
-import org.neso.core.netty.ByteLengthBasedReader.ReaderStatus;
+import org.neso.core.server.internal.ByteLengthBasedReader.ReaderStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,17 +25,10 @@ public final class ByteLengthBasedInboundHandler extends ChannelInboundHandlerAd
 
     final private ByteLengthBasedReader reader;
     
-    final private int readTimeoutMillisOnRead;
-	
     private ByteBuf toReadBuf;
     
     public ByteLengthBasedInboundHandler(ByteLengthBasedReader reader) {
-    	this(reader, -1);
-	}
-    
-    public ByteLengthBasedInboundHandler(ByteLengthBasedReader reader,  int readTimeoutMillisOnRead) {
     	this.reader = reader;
-    	this.readTimeoutMillisOnRead = readTimeoutMillisOnRead;
 	}
     
     @Override
@@ -93,13 +86,15 @@ public final class ByteLengthBasedInboundHandler extends ChannelInboundHandlerAd
     }
     
     private void addReadTimeoutHandler(ChannelHandlerContext ctx) {
-    	if (readTimeoutMillisOnRead > 0 && ctx.channel().pipeline().get(AsyncCloseReadTimeoutHandler.class.getSimpleName()) == null) {
-    		ctx.channel().pipeline().addBefore(ByteLengthBasedInboundHandler.class.getSimpleName(), AsyncCloseReadTimeoutHandler.class.getSimpleName(), new AsyncCloseReadTimeoutHandler(readTimeoutMillisOnRead, TimeUnit.MILLISECONDS, reader));
+    	if (reader.getReadTimeoutMillis() > 0 && ctx.channel().pipeline().get(AsyncCloseReadTimeoutHandler.class.getSimpleName()) == null) {
+    		ctx.channel().pipeline().addBefore(ByteLengthBasedInboundHandler.class.getSimpleName(), 
+    										AsyncCloseReadTimeoutHandler.class.getSimpleName(), 
+    										new AsyncCloseReadTimeoutHandler(reader.getReadTimeoutMillis(), TimeUnit.MILLISECONDS, reader));
 		}
     }
     
     private void removeReadTimeoutHandler(ChannelHandlerContext ctx) {
-    	if (readTimeoutMillisOnRead > 0 && ctx.channel().pipeline().get(AsyncCloseReadTimeoutHandler.class.getSimpleName()) != null) {
+    	if (reader.getReadTimeoutMillis() > 0 && ctx.channel().pipeline().get(AsyncCloseReadTimeoutHandler.class.getSimpleName()) != null) {
 			ctx.channel().pipeline().remove(AsyncCloseReadTimeoutHandler.class.getSimpleName());
 		}
     }

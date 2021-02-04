@@ -15,29 +15,40 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 import java.lang.reflect.Constructor;
 
-import org.neso.core.netty.ByteLengthBasedInboundHandler;
-import org.neso.core.netty.ClientAgent;
 import org.neso.core.request.factory.InMemoryRequestFactory;
 import org.neso.core.request.handler.RequestHandler;
-import org.neso.core.request.handler.task.RequestExecutor;
-import org.neso.core.support.ConnectionManagerHandler;
+import org.neso.core.server.internal.ByteLengthBasedInboundHandler;
+import org.neso.core.server.internal.ClientAgent;
+import org.neso.core.server.internal.ConnectionManagerHandler;
+import org.neso.core.server.request.task.RequestExecutor;
 import org.neso.core.support.ConnectionRejectListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 서버 실행기
+ * 
+ * {@link RequestHandler} 요청 처리 위임
+ */
 public class Server extends ServerOptions {
 	
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
  
-    private ServerBootstrap sbs;
+    final private ServerBootstrap sbs = new ServerBootstrap();
+
+    final RequestHandler requestHandler;
     
-    private ServerContext context;
+    final int port;
+    
+   
+    private ServerContext context;	//서버 기동시 초기화
     
     private int soBackLog = -1;
-
+    
+    
     public Server(RequestHandler requestHandler, int port) {
-    	context = new ServerContext(port, requestHandler, this);
-    	sbs = new ServerBootstrap();
+    	this.requestHandler = requestHandler;
+    	this.port = port;
 	}
  
     
@@ -49,6 +60,7 @@ public class Server extends ServerOptions {
     	sbs.option(option, value);
     	return this;
     }
+    
     @Override
     public <T> ServerOptions childChannelOption(ChannelOption<T> childOption, T value) {
     	sbs.childOption(childOption, value);
@@ -65,12 +77,13 @@ public class Server extends ServerOptions {
     	
 
 		int ioThreads = 0; //0은 네티 전략 따름 -> core * 2;
-    	if (context.requestExecutor().isRunIoThread()) {
-			ioThreads = this.context.requestExecutor().getMaxRequets() + 1; //io스레드가 request처리 동시실행숫자보다 작으면 io스레드에서 병목이 발생하므로.. io스레드가 무조건 커야한다.
+    	if (context.requestExecutor().isRunOnIoThread()) {
+			ioThreads = context.options().getMaxRequests() + 1; //io스레드가 request처리 동시실행숫자보다 작으면 io스레드에서 병목이 발생하므로.. io스레드가 무조건 커야한다.
 		}
     	
     	EventLoopGroup workerGroup = new NioEventLoopGroup(ioThreads, new DefaultThreadFactory("ioThread"));//connectionManager.getMaxConnectionSize() + 1
     	
+    	ChannelFuture cf = null;
         try {
         	
         	if (soBackLog == -1) {
@@ -94,7 +107,7 @@ public class Server extends ServerOptions {
              });
             
             
-            final ChannelFuture cf = sbs.bind(context.port()).sync().addListener(new GenericFutureListener<ChannelFuture>() {
+            cf = sbs.bind(context.port()).sync().addListener(new GenericFutureListener<ChannelFuture>() {
                 public void operationComplete(ChannelFuture future) throws Exception {
 
                     if (future.isSuccess()) {
@@ -107,19 +120,36 @@ public class Server extends ServerOptions {
                 }
             });
             
+            final ChannelFuture cpCf = cf;
             Runtime.getRuntime().addShutdownHook(new Thread() {
     			@Override
     			public void run() {
-    				cf.channel().close();
+    				try {
+    					context.requestExecutor().shutdown();
+    				} catch (Exception e) {
+    					logger.error("shutdown exception ", e);
+					}
+    				
+    				try {
+    					requestHandler.destroy();
+    				} catch (Exception e) {
+    					logger.error("shutdown exception ", e);
+					}
+    				
+    				cpCf.channel().close();
     			}
     		});
             
             logger.info(sbs.toString());
+
+        } catch (Exception e) {
+        	throw new RuntimeException("server start fail", e);
+        }
+        
+        try {
             
             cf.channel().closeFuture().sync().addListener(new GenericFutureListener<ChannelFuture>() {
                 public void operationComplete(ChannelFuture future) throws Exception {
-                	
-                	context.requestExecutor().shutdown();
                 	
                     if (future.isSuccess()) {
                         logger.info("socket server shutdown .... bind port={}", context.port());
@@ -129,9 +159,8 @@ public class Server extends ServerOptions {
                 } 
             });
         } catch (Exception e) {
-        	throw new RuntimeException("server start fail", e);
-            
-        } finally {
+        	throw new RuntimeException("server error", e);
+		} finally {
             try {
                 workerGroup.shutdownGracefully().get();
                 bossGroup.shutdownGracefully().get();
@@ -140,43 +169,37 @@ public class Server extends ServerOptions {
             }           
         }
     }
-    
-    public ServerContext getServerContext() {
-    	return this.context;
-    }
-    
 
+   
     private void configurationContext() {
     	
+    	RequestExecutor requestTaskExecutor = null;
     	try {
     	    
         	//Constructor<? extends RequestTaskExecutor> cons = requestExecutorType.getConstructor(new Class[]{int.class});
     		Constructor<? extends RequestExecutor> cons = getRequestExecutorType().getConstructor();
-        	RequestExecutor requestTaskExecutor = cons.newInstance();
-        	requestTaskExecutor.init(getMaxRequests());
+        	requestTaskExecutor = cons.newInstance();
+        	requestTaskExecutor.init(getMaxRequests(), getRequestExecutorshutdownWaitSeconds());
         	
         	//TODO requestTaskExecutor 로그 출력
-        	
-        	context.setRequestExecutor(requestTaskExecutor);
     	} catch (Exception e) {
     		throw new RuntimeException("configuration server context .. requestExecutor create error", e);
     	}
-    	
-    	context.setRequestFactory(new InMemoryRequestFactory());  //일단 메모리만 제공
-    	
+
     	int maxConnections = getMaxConnections();
 		ConnectionManagerHandler connectionManagerHandler = new ConnectionManagerHandler(maxConnections);
-		if (context.requestHandler() instanceof ConnectionRejectListener) {
-			connectionManagerHandler.setConnectionRejectListener((ConnectionRejectListener) context.requestHandler());
+		if (requestHandler instanceof ConnectionRejectListener) {
+			connectionManagerHandler.setConnectionRejectListener((ConnectionRejectListener) requestHandler);
 		}
-		context.setConnectionManager(connectionManagerHandler);
+		
+		this.context = new ServerContext(port, requestHandler, this, new InMemoryRequestFactory(), requestTaskExecutor, connectionManagerHandler);
     }
     
 
     private void initializeHandlerByAccept(SocketChannel sc) {
     	
 
-    	ClientAgent clientAgent = new ClientAgent(sc, context);
+    	ClientAgent client = new ClientAgent(sc, context);
     	
 		ChannelPipeline cp = sc.pipeline();
 		
@@ -186,7 +209,7 @@ public class Server extends ServerOptions {
 		
 		cp.addLast((ConnectionManagerHandler) context.connectionManager());
 		
-		ByteLengthBasedInboundHandler readHandler = new ByteLengthBasedInboundHandler(clientAgent.getReader(), getReadTimeoutMillisOnRead());
+		ByteLengthBasedInboundHandler readHandler = new ByteLengthBasedInboundHandler(client.getReader());
 		
 		cp.addLast(ByteLengthBasedInboundHandler.class.getSimpleName(), readHandler); //4. READ 처리
     }

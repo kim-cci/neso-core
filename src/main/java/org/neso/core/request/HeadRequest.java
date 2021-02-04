@@ -1,6 +1,8 @@
 package org.neso.core.request;
 
-
+/**
+ *
+ */
 public interface HeadRequest {
 	
 	public Session getSession();

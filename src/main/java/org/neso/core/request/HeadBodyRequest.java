@@ -5,19 +5,15 @@ import io.netty.buffer.ByteBuf;
 public interface HeadBodyRequest extends HeadRequest {
 
 	/**
-	 * Body byte array 
-	 * @return
+	 * @return body byte array
 	 */
 	public byte[] getBodyBytes(); 
 	
 	/**
-	 * Head + body byte array
-	 * @return
+	 * @return head + body byte array
 	 */
 	public byte[] getAllBytes();
 	
-	/**
-	 * 
-	 */
+	
 	public ByteBuf getDirectBodyBuf();
 }

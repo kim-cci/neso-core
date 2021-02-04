@@ -8,7 +8,7 @@ import org.neso.core.request.HeadBodyRequest;
 import org.neso.core.request.Session;
 
 
-public abstract class AbstractWirableServerHandler extends AbstractServerHandler {
+public abstract class AbstractWirableServerHandler extends ServerHandler {
 
 	private ListenerExceptionCaughtRequestExecute listenerExceptionCaughtApiExecute;
 	final public AbstractWirableServerHandler attachListenerExceptionCaughtApiExecute(ListenerExceptionCaughtRequestExecute l) {

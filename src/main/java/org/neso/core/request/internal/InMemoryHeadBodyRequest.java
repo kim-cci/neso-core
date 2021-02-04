@@ -4,9 +4,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.neso.core.netty.BufUtils;
 import org.neso.core.request.Client;
 import org.neso.core.request.Session;
+import org.neso.core.server.internal.BufUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

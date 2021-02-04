@@ -7,15 +7,19 @@ import org.apache.commons.lang3.StringUtils;
 import org.neso.api.Api;
 import org.neso.core.exception.ApiNotFoundException;
 import org.neso.core.exception.ClientAbortException;
-import org.neso.core.netty.ByteBasedWriter;
 import org.neso.core.request.Client;
 import org.neso.core.request.HeadBodyRequest;
 import org.neso.core.request.Session;
 import org.neso.core.request.handler.AbstractRequestHandler;
+import org.neso.core.server.internal.ByteBasedWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * Api 개념을 적용한 requestHandler
+ * 
+ * 
+ */
 public abstract class ServerHandler extends AbstractRequestHandler {
 	
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -25,9 +29,9 @@ public abstract class ServerHandler extends AbstractRequestHandler {
 	private Map<String, Api> apiHandlerMap = new ConcurrentHashMap<String, Api>();
 
 
-	private Api apiMatch(HeadBodyRequest request) {
+	private Api matchingApi(HeadBodyRequest request) {
 		
-		String apiKey = getApiKey(request);
+		String apiKey = apiKey(request);
 		if (StringUtils.isEmpty(apiKey)) {
 			return null;
 		}
@@ -40,13 +44,14 @@ public abstract class ServerHandler extends AbstractRequestHandler {
 		return null;
     }
 	
-	protected String getApiKey(HeadBodyRequest request) {
-		String apiKey = apiKeyFromHead(request.getHeadBytes());
-		if (StringUtils.isEmpty(apiKey)) {
-			apiKey = apiKeyFromBody(request.getBodyBytes());
+	public void registApi(String apiKey, Class<? extends Api> apiClass) {
+		try {
+			registApi(apiKey, apiClass.newInstance());
+		} catch (InstantiationException iste) {
+			throw new RuntimeException(iste);
+		} catch (IllegalAccessException iae) {
+			throw new RuntimeException(iae);
 		}
-		
-		return apiKey;
 	}
 	
 	public void registApi(String apiKey, Api api) {
@@ -54,35 +59,28 @@ public abstract class ServerHandler extends AbstractRequestHandler {
         logger.debug("{}({}) Api added to [{}]", apiKey, api.getClass().getSimpleName(), this.getClass().getSimpleName());
 	}
 
-	@Override
-	final public void onRequest(Client client, HeadBodyRequest request) {
-		try {
-			Api matchApi = apiMatch(request);
-			if (matchApi == null) {
-				throw new ApiNotFoundException(request, null);
-			}
-			
-			request.addAttribute(MATCH_API_ATTR_NAME, matchApi);
-		} catch (Exception e) {
-			throw new ApiNotFoundException(request, e);
-		}
-		
-		super.onRequest(client, request);
-	}
-	
+
 	@Override
 	final public void doRequest(Client client, HeadBodyRequest request) throws Exception {
-		
+
 		if (client.isConnected()) {
-			Api exeucteApi = request.getAttribute(MATCH_API_ATTR_NAME);
-			if (exeucteApi == null) {
-				throw new ApiNotFoundException(request, null);
+			
+			Api matchedApi = null;
+			try {
+				matchedApi = matchingApi(request);
+				if (matchedApi == null) {
+					throw new ApiNotFoundException(request, null);
+				}
+				
+				request.addAttribute(MATCH_API_ATTR_NAME, matchedApi);
+			} catch (Exception e) {
+				throw new ApiNotFoundException(request, e);
 			}
-	  
+
 			byte[] response = preApiExecute(client, request);
 				
 			if (response == null) {
-				response = exeucteApi.handle(request);
+				response = matchedApi.handle(request);
 
 				byte[] postR = postApiExecute(client, request, response);
 				if (postR != null) {
@@ -92,12 +90,6 @@ public abstract class ServerHandler extends AbstractRequestHandler {
 			
 			try {
 				ByteBasedWriter writer = client.getWriter();
-//				
-//				for (byte b : response) {  //TO TEST
-//					writer.write(b);
-//					Thread.sleep(100);
-//				}
-				
 				writer.write(response == null ? new byte[0] : response);
 				writer.close();
 				
@@ -177,9 +169,7 @@ public abstract class ServerHandler extends AbstractRequestHandler {
 	
 
 	
-	protected abstract String apiKeyFromHead(byte[] head);
-	
-	protected abstract String apiKeyFromBody(byte[] body);
+	protected abstract String apiKey(HeadBodyRequest request);
 	
 	protected abstract byte[] preApiExecute(Session session, HeadBodyRequest request);
     
