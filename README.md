@@ -65,6 +65,22 @@ public static void main(String[] args) {
 <br>
 <br>
 
+## options
+|옵션메소드|기본값|설명|
+|---|---|---|
+|maxRequestBodyLength(int)|-1| 본문 최대 허용 길이 |
+|maxConnections(int)|-1|최대 동시 접속 허용 수|
+|connectionOriented()| - | 기본은 비연결형, 메소드 호출시 연결형 설정|
+|readTimeout(int)| 500 | miliSecond단위 |
+|maxRequests(int)| 100 | 최대 동시 요청 허용 수|
+|requestExecutorType(class extend..)| - | 요청 처리 타입|
+|channelOption(ChannelOption<T....)| - | 소켓 채널 옵션 설정 시 사용|
+|inoutLogging(boolean)| false | in, out 로그 활성화 여부|
+|pipeLineLogLevel()| NONE | DEBUG, INFO, ERROR|
+|shutdownWaitTime()| 10000 | 서버 셧다운 시, 요청처리 대기 시간(miliSecond단위)|
+<br>
+<br>
+
 ## maven repository
 ````xml
 <dependency> 
