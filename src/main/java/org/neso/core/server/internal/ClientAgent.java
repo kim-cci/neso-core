@@ -209,7 +209,7 @@ public class ClientAgent extends SessionClientImpl {
     			
     			int bodyLength = 0;
     			try {
-    				requestHandler.bodyLength(currentRequest);
+    				bodyLength = requestHandler.bodyLength(currentRequest);
     			} catch (Exception e) {
 					throw new RuntimeException("invalid body length", e);
 				}

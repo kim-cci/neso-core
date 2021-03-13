@@ -72,7 +72,7 @@ public class Server extends ServerOptions {
     	
     	configurationContext();
     	
-    	int bossThreads = Runtime.getRuntime().availableProcessors();
+    	int bossThreads = 1;//Runtime.getRuntime().availableProcessors();
     	EventLoopGroup bossGroup = new NioEventLoopGroup(bossThreads, new DefaultThreadFactory("bossThread"));
     	
 
