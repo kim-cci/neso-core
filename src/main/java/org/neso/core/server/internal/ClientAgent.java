@@ -26,9 +26,6 @@ import org.slf4j.LoggerFactory;
 /**
  * Client구현체
  * 
- * 쓰기&접속종료 작업 시 스레드 간 경합 발생
- * getWriter() 로 writer 선점하여 락 획득 후 쓰기 작업 가능
- * 
  */
 public class ClientAgent extends SessionClientImpl {
 
